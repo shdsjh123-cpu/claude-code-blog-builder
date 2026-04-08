@@ -13,7 +13,7 @@ Claude Code 미설치면 https://docs.claude.com/en/docs/claude-code 참조.
 ## 2. 레포 clone
 
 ```bash
-git clone https://github.com/shdsjh123/claude-code-blog-builder.git
+git clone https://github.com/shdsjh123-cpu/claude-code-blog-builder.git
 cd claude-code-blog-builder
 ```
 

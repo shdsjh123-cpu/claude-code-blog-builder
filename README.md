@@ -30,7 +30,7 @@ Claude Code 위에서 동작하는 한국어 블로그 자동화 시스템입니
 ### 1. 설치 (30초)
 
 ```bash
-git clone https://github.com/shdsjh123/claude-code-blog-builder.git
+git clone https://github.com/shdsjh123-cpu/claude-code-blog-builder.git
 cd claude-code-blog-builder
 cp .env.example .env
 # .env 파일 열어서 GEMINI_API_KEY 채우기
