@@ -10,6 +10,8 @@
  * 임계값: 기본 25% (Jaccard). 초과 시 경고, 종료코드는 0 유지.
  */
 
+import './lib/env.js';
+
 import { readFile, readdir, stat } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 

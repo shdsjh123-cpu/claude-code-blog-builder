@@ -1,283 +1,207 @@
 # Claude Code Blog Builder
 
-이 프로젝트는 Claude Code에서 직접 실행하는 블로그 콘텐츠 자동화 도구입니다.
-사용자가 "이 키워드로 블로그 글 만들어줘"라고 요청하면 키워드 리서치 → 초안 생성 → 이미지 생성 → 품질 검증 → 발행 어시스턴트까지 수행합니다.
+이 프로젝트는 탐정업 네이버 블로그 자동화를 위한 도구입니다.
 
-> ⚠️ **이 시스템은 1개 블로그를 직접 운영하는 경우에 최적화되어 있습니다.**
-> 멀티 카테고리 운영, 저품질 복구, 발행 스케줄링, 외주팀 워크플로우 등은 상위 솔루션이 필요합니다.
+Claude Code 기반 구조를 유지하면서, Codex와 일반 터미널에서도 유지보수할 수 있도록 `scripts/`와 `npm run ...` 명령을 제공합니다.
 
----
+## 핵심 원칙
 
-## 🚀 처음 사용한다면 — `/setup` 부터
-
-이 레포는 **누구나 자기 회사에 맞게 사용**할 수 있도록 템플릿화되어 있습니다.
-처음 clone 받았다면 가장 먼저 다음 명령을 실행하세요:
-
-```
-/setup
-```
-
-5분 인터뷰를 통해 `knowledge/brand-facts.md`가 자동으로 채워지며, 이후 `/blog-new "키워드"` 한 줄로 글 한 편이 나옵니다.
-
-**Phase 1 (5분, 필수)** → `/setup`
-**Phase 2 (10분, 권장)** → `/setup-tone` (여러분 회사 블로그 URL에서 톤 자동 학습)
-**Phase 3 (15분, 선택)** → `/setup-domain` (카테고리별 키워드 뱅크 + 산업별 금칙어)
-
----
+- `.claude/commands`와 `.claude/agents`는 가능한 한 보존합니다.
+- Node scripts는 Codex/터미널에서 실행 가능한 보조 도구입니다.
+- 자동 발행은 하지 않습니다.
+- `naver:draft`는 네이버 글쓰기 화면에 발행 직전까지 자동 입력한 뒤 멈춥니다.
+- 네이버 아이디/비밀번호는 요구하거나 저장하지 않습니다.
+- API 키는 `.env`에서만 읽습니다.
+- 실제 API 키를 코드, 문서, 커밋, 채팅에 남기지 않습니다.
+- `.env`와 `output/`은 커밋하지 않습니다.
 
 ## 프로젝트 구조
 
-```
+```text
 claude-code-blog-builder/
-├── CLAUDE.md              # 이 파일 (Claude Code 지시서)
-├── README.md
-├── INSTALL.md             # 30초 설치 가이드
-├── package.json           # 외부 의존성 0
-│
-├── knowledge/             # ⭐ Single Source of Truth
-│   ├── README.md
-│   ├── brand-facts.template.md          # 공개 템플릿
-│   ├── brand-facts.md                   # /setup이 생성 (gitignored)
-│   ├── conversion-benchmarks.template.md
-│   ├── conversion-benchmarks.md
-│   ├── banned-words.template.json
-│   ├── banned-words.json
-│   ├── tone-samples/                    # /setup-tone이 채움
-│   └── patterns/
-│
-├── scripts/
-│   ├── research.js              # 네이버 API 키워드 리서치
-│   ├── generate-images.js       # Nano Banana Pro 이미지 생성
-│   ├── quality-check.js         # 7항목 결정론 채점
-│   ├── duplicate-check.js       # 6-gram Jaccard 유사도
-│   ├── hook-post-write.js       # PostToolUse 훅 라우터
-│   ├── preview.js               # 발행 어시스턴트 (HTML)
-│   ├── setup-tone-fetch.js      # 블로그 URL 본문 수집
-│   └── sanitize-check.sh        # push 전 게이트
-│
-├── templates/
-│   ├── thumbnail.html
-│   ├── infographic.html
-│   └── quote-card.html
-│
 ├── .claude/
-│   ├── settings.json            # PostToolUse 훅 등록
-│   ├── commands/
-│   │   ├── setup.md             # /setup
-│   │   ├── setup-tone.md
-│   │   ├── setup-domain.md
-│   │   ├── blog-new.md          # /blog-new
-│   │   ├── blog-research.md
-│   │   ├── blog-quality.md
-│   │   ├── blog-publish-ready.md
-│   │   └── blog-preview.md
-│   └── agents/
-│       ├── setup-interviewer.md
-│       ├── blog-researcher.md
-│       ├── blog-writer.md
-│       ├── blog-quality-reviewer.md
-│       └── medical-law-checker.md
-│
-├── keyword-bank/                # 카테고리별 시드 키워드
-│   ├── README.md
-│   ├── detail-page.yml          # 예시
-│   ├── hospital-marketing.yml   # 예시
-│   ├── beauty-brand.yml         # 예시
-│   └── ai-marketing.yml         # 예시
-│
-├── output/                      # 생성된 결과물 (gitignored)
-│   └── .gitkeep
-│
-└── docs/
-    ├── how-it-works.md
-    ├── setup-guide.md
-    └── troubleshooting.md
+│   ├── commands/              # Claude Code slash commands
+│   └── agents/                # Claude Code agents
+├── knowledge/
+│   └── banned-words.template.json
+├── scripts/
+│   ├── blog-auto.js           # 전체 자동 생성 파이프라인
+│   ├── dashboard-server.js    # 로컬 대시보드 서버
+│   ├── generate-post.js       # OpenAI 글 생성
+│   ├── generate-images.js     # OpenAI/Gemini 이미지 생성
+│   ├── quality-check.js       # 품질/금칙어 검사
+│   ├── preview.js             # 미리보기 HTML 생성
+│   ├── naver-login.js         # 네이버 로그인 세션 생성
+│   ├── naver-draft.js         # 네이버 글쓰기 화면 자동 입력
+│   └── lib/
+│       ├── env.js
+│       ├── openai-text.js
+│       ├── openai-images.js
+│       ├── naver-browser.js
+│       └── slug.js
+├── dashboard/                 # 로컬 대시보드 정적 UI
+├── output/                    # 생성 결과, gitignored
+├── start-dashboard.bat        # Windows 대시보드 실행 파일
+├── start-dashboard.command    # macOS 대시보드 실행 파일
+├── README.md
+├── INSTALL.md
+└── package.json
 ```
 
----
+## 주요 npm scripts
 
-## 사용법
+| script | 설명 |
+|:---|:---|
+| `npm run blog:auto` | 글, 이미지, 품질검사, 미리보기까지 생성 |
+| `npm run post` | 글 패키지만 생성 |
+| `npm run images` | 이미지 4종 생성 |
+| `npm run quality` | 품질/금칙어 검사 |
+| `npm run preview` | 미리보기 HTML 생성 |
+| `npm run dashboard` | 로컬 대시보드 실행 |
+| `npm run naver:login` | 네이버 로그인 세션 생성 |
+| `npm run naver:draft` | 네이버 글쓰기 화면에 발행 직전까지 자동 입력 |
 
-`/setup` 완료 후:
+## 환경 변수
 
-```
-/blog-new "병원 마케팅"
-/blog-new "AI 마케팅 트렌드"
-/blog-new "상세페이지 제작 비용"
-```
-
----
-
-## 실행 파이프라인
-
-### STEP 1: 키워드 리서치
-
-`scripts/research.js`를 사용합니다 (네이버 Search API 자동 호출 + 분석).
+`.env.example`을 복사해 `.env`를 만듭니다.
 
 ```bash
-node scripts/research.js --keyword "<키워드>" --output "output/<날짜>_<키워드>"
+cp .env.example .env
 ```
 
-스크립트가 자동으로 수행:
-- 블로그 전체 포스팅 수 → 경쟁도 판정 (10만+: 높음 / 3만+: 보통 / 미만: 낮음)
-- 최근 30일 포스팅 비율 → 트렌드 활성도
-- 상위 글 제목에서 연관 키워드 TOP 15 추출
-- 롱테일 키워드 8개 자동 제안
-- `research.json` 파일 저장
+필수/권장 값:
 
-API 인증 실패 시 웹 검색 기반으로 대체 리서치.
+```env
+IMAGE_PROVIDER=openai
+OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_TEXT_MODEL=gpt-4.1-mini
+OPENAI_IMAGE_MODEL=gpt-image-2
 
-### STEP 2: 콘텐츠 생성
+BRAND_NAME=탐정법인 범랑
+BRAND_LOGO_MARK=BR
+BRAND_LOGO_PATH=assets/brand-logo.png
+BRAND_PHONE=1660-2515
+```
 
-**⚠️ 필수 사전 작업 — 글을 쓰기 전에 반드시 아래 파일을 Read로 읽을 것:**
+`BRAND_LOGO_PATH`는 참고용이며, 생성 이미지에 실제 로고 파일을 후처리로 합성하지 않습니다.
 
-1. `knowledge/brand-facts.md` — 회사 수치·인증 (Single Source of Truth, **이 파일 외의 숫자 사용 금지**)
-2. `knowledge/tone-samples/real-blog-posts.txt` — 회사 블로그 문체 학습 (있을 경우)
-3. `knowledge/patterns/writing-playbook.txt` — 글쓰기 패턴 가이드 (있을 경우)
-4. `knowledge/banned-words.json` — 금칙어 + 도메인 단어
-5. `output/_index.json` — 최근 사용한 패턴/도입부 확인 → **의도적으로 다른 조합 선택**
-6. (수치 인용 시) `knowledge/conversion-benchmarks.md`
+`GEMINI_API_KEY`, `GEMINI_IMAGE_MODEL`은 기존 Gemini 이미지 흐름 호환용 optional 값입니다.
 
-> `brand-facts.md`가 placeholder 상태(`[PLACEHOLDER]`로 시작)면 먼저 사용자에게 `/setup` 실행을 안내하고 멈출 것.
+## blog:auto
 
-#### 글쓰기 원칙
-
-- `brand-facts.md`에 없는 수치 사용 금지 (픽션 금지). AI 추측 숫자는 신뢰를 박살낸다.
-- 회사 톤 시그니처 표현(`tone-samples`에서 추출)을 자연스럽게 2개 이상 삽입
-- 도입부 4줄 공식: 문제 → 손실 → 자격 → 끝까지 읽으면 얻을 것
-- A.E.A 구조: 권위(Authority) → 근거(Evidence) → 행동(Action)
-- 본문 1,500~3,000자, 메인 키워드 5~12회 자연 삽입
-- `[IMAGE: 설명]` 마커 최소 4개
-- 외부 링크 0건 (네이버 저품질 트리거)
-- 최상급/금칙어 0건 (`banned-words.json` 참조)
-- 표 1개 이상 삽입
-
-#### 출력 형식
-
-`output/{날짜}_{키워드}/` 폴더에:
-
-1. `post.md` — 블로그 본문 (마크다운)
-2. `post.html` — 스마트에디터 붙여넣기용 HTML
-3. `metadata.json` — 제목, 태그, 메타설명, 키워드 리포트
-4. `guide.md` — 편집 가이드 (이미지 위치, 수정 포인트)
-
-### STEP 3: 이미지 생성
-
-Nano Banana Pro (Gemini 3 Pro Image) API 사용. 외부 의존성 0.
-
-브랜드 시스템은 `.env`로 주입 (`/setup-domain`이 자동 설정):
-- `BRAND_NAME` — 이미지에 박힐 브랜드명
-- `BRAND_BG_COLOR` / `BRAND_FG_COLOR` / `BRAND_ACCENT` — 컬러팔레트
+`blog:auto`는 하나의 키워드로 전체 패키지를 생성합니다.
 
 ```bash
-GEMINI_API_KEY=your_key node scripts/generate-images.js \
-  --title "글 제목" \
-  --keyword "키워드" \
-  --points "포인트1|||포인트2|||포인트3" \
-  --quote "핵심 문구" \
-  --steps "단계1|||단계2|||단계3" \
-  --output "output/폴더/images"
+npm run blog:auto -- --keyword "탐정 비용 산정 기준" --type cost
 ```
 
-생성 이미지 4종:
-1. **썸네일** (16:9) — 메인 키워드 + 브랜드 로고
-2. **인포그래픽** (2:3) — 핵심 포인트 시각화
-3. **인용 카드** (1:1) — 핵심 문구 강조
-4. **프로세스 다이어그램** (4:3) — 단계별 시각화
+지원 type:
 
-매번 고유 이미지 (동일 이미지 재사용은 네이버 유사 문서 판정 트리거).
+- `infidelity`: 외도, 상간, 배우자 문제
+- `people-search`: 사람 찾기, 가출, 소재 확인
+- `cost`: 탐정 비용, 견적, 추가 비용
+- `evidence`: 증거수집, 자료 정리, 사실관계 확인
+- `general`: 일반 탐정업 정보성 글
 
-### STEP 4: 품질 검증 + 유사도 검사
+`--type`을 생략하면 `general`입니다.
 
-**자동 훅으로 실행됨** — `post.md`를 Write/Edit 하면 `.claude/settings.json` 훅이 아래 두 스크립트를 자동 실행합니다:
+생성 결과:
 
-```bash
-node scripts/quality-check.js --file "output/폴더/post.md" --keyword "키워드"
-node scripts/duplicate-check.js --file "output/폴더/post.md" [--threshold 25]
-```
-
-`duplicate-check.js`는 6-gram Jaccard 유사도 계산. 임계값 25% 초과 시 경고.
-
-검사 항목:
-- ✅ 키워드 빈도 (5~12회 권장)
-- ✅ 글자수 (≥ 1,500)
-- ✅ 어미 반복 (3회 연속 금지)
-- ✅ 이미지 마커 수 (≥ 4개)
-- ✅ 외부 링크 0건
-- ✅ 최상급/금칙어 0건
-- ✅ 접속사 비율 ≤ 5%
-
-의료/뷰티 키워드는 추가로 `medical-law-checker` 서브에이전트 호출.
-
-### STEP 4.5: 발행 어시스턴트
-
-`scripts/preview.js`가 작성된 글을 self-contained HTML로 렌더링하고 브라우저로 엽니다.
-
-```bash
-node scripts/preview.js --folder "output/폴더"
-```
-
-브라우저에서:
-- 제목·태그·메타설명 카드 (각각 클립보드 복사)
-- 본문 섹션별 "서식 포함 복사" / "텍스트만 복사"
-- 이미지 4장 개별/일괄 다운로드
-- 발행 체크리스트 10개
-
-네이버 발행 API가 폐쇄돼 있어 자동 발행은 불가하지만, 이 도구로 복붙 마찰을 최소화합니다.
-
-### STEP 5: 최종 패키지
-
-`output/{날짜}_{키워드}/` 폴더 구조:
-```
-output/2026-04-08_my-keyword/
+```text
+output/<날짜>_<키워드>/
 ├── post.md
 ├── post.html
 ├── metadata.json
-├── guide.md
-├── images/
-│   ├── thumbnail.png
-│   ├── infographic.png
-│   ├── quote-card.png
-│   └── process.png
-└── quality-report.json
+├── quality-report.json
+├── preview.html
+└── images/
+    ├── thumbnail.png
+    ├── infographic.png
+    ├── quote-card.png
+    └── process.png
 ```
 
----
+## naver:login
 
-## 환경 설정
-
-`.env` 파일 (`.env.example` 참조):
-
-```
-# 네이버 개발자센터 (선택 — 없으면 웹 검색으로 대체)
-NAVER_CLIENT_ID=your_client_id
-NAVER_CLIENT_SECRET=your_client_secret
-
-# Nano Banana Pro 이미지 생성 (필수)
-# Google AI Studio (aistudio.google.com)에서 무료 발급
-GEMINI_API_KEY=your_gemini_api_key
-
-# 브랜드 시스템 (/setup-domain이 자동 설정)
-BRAND_NAME=YOUR BRAND
-BRAND_BG_COLOR=#F7F6F2
-BRAND_FG_COLOR=#1A1A1A
-BRAND_ACCENT=#D97A3A
+```bash
+npm run naver:login
 ```
 
-별도 `npm install` 불필요. Node 20+ 내장 fetch만 사용.
+사용자가 직접 네이버에 로그인합니다. 아이디/비밀번호를 스크립트에 입력하지 않습니다.
 
----
+## naver:draft
 
-## 주의사항
+```bash
+npm run naver:draft -- --folder "output/2026-05-15_탐정비용산정기준"
+```
 
-- 생성된 글은 **반드시 사람이 검토 후 발행**합니다
-- 자동 발행 기능은 의도적으로 제외 (저품질 리스크)
-- 하루 2건 이상 발행 권장하지 않음
-- 발행 시간은 불규칙하게 유지 (패턴 탐지 방지)
-- 이미지는 반드시 스마트에디터에서 직접 업로드
+동작:
 
----
+- 네이버 글쓰기 화면 열기
+- 작성 중 글 팝업 처리
+- 제목 입력
+- 본문 입력
+- 이미지 첨부
+- 태그를 본문 마지막 줄에 입력
+- 브라우저를 닫지 않고 대기
 
-## 라이선스
+발행 버튼은 클릭하지 않습니다.
 
-MIT — 자유롭게 사용/수정/배포 가능. 다만 `knowledge/` 폴더의 회사 데이터는 절대 git에 올리지 마세요 (`.gitignore`에 등록되어 있습니다).
+## 탐정업 금지표현 기준
+
+품질 검사는 `knowledge/banned-words.json`이 있으면 우선 사용하고, 없으면 `knowledge/banned-words.template.json`을 사용합니다.
+
+주요 금지/주의 표현:
+
+- 변호사법 위반 오인 표현
+- 법률대리처럼 보이는 표현
+- 승소/소송 결과 보장
+- 불법 위치추적 암시
+- 개인정보 불법 조회 암시
+- 통신내역 조회 암시
+- 불법 촬영 암시
+- 해킹, 계정 접속, 사생활 침해 암시
+- `100% 증거 확보`, `무조건 잡아드립니다` 같은 과장광고
+- 자극적인 공포 마케팅
+
+대체 방향:
+
+- 합법적인 범위
+- 의뢰인이 제공한 자료
+- 공개 정보
+- 사실관계 정리
+- 법률 판단은 변호사 상담 필요
+
+## 블로그 본문 작성 기준
+
+- 글을 쓰기 전에 키워드의 검색 의도를 먼저 판단합니다.
+- 제목과 도입부는 독자가 바로 이해할 수 있게 명확하게 씁니다.
+- 핵심 답변은 초반에 빠르게 정리합니다.
+- 본문 구조를 먼저 보여주고, 각 항목은 짧고 구체적으로 전개합니다.
+- 불필요한 배경 설명이나 반복 문장으로 분량을 늘리지 않습니다.
+- "도움이 될 수 있습니다", "확인해보는 것이 좋습니다" 같은 모호한 표현보다 구체적인 기준, 절차, 확인 항목을 제시합니다.
+- 탐정업 금지표현 기준을 반드시 유지하며, 불법 위치추적·개인정보 조회·통신내역 조회·해킹·불법 촬영·결과 보장 표현은 사용하지 않습니다.
+
+## AI 브리핑 대응 작성 방향
+
+- 네이버 AI 브리핑에 발췌·요약되기 쉬운 답변형 구조로 작성합니다.
+- 각 핵심 섹션은 설명보다 먼저 한 문장짜리 직접 답변을 배치합니다.
+- 문단은 단독으로 발췌돼도 의미가 통하도록 사실 중심으로 씁니다.
+- 정의, 조건, 절차, 체크리스트, 비교표처럼 요약 가능한 정보 단위를 우선합니다.
+- 가능한 확인 범위, 불가능한 요청, 변호사 상담이 필요한 영역을 분리해서 씁니다.
+- 검색 질의에 답하지 않는 홍보성 문장과 추상적인 표현은 줄입니다.
+- 일반 기준과 사건별 판단을 구분하고, 확정적으로 말할 수 없는 내용은 조건을 명시합니다.
+- 이미지 주변 문맥과 캡션은 해당 섹션 주제와 일치시켜 AI가 잘못 연결하지 않게 합니다.
+
+## Claude Code 사용
+
+기존 slash command와 agent 파일은 유지됩니다.
+
+다만 현재 검증된 터미널 흐름은 다음입니다.
+
+```bash
+npm run blog:auto -- --keyword "외도 증거수집 전 확인할 것" --type infidelity
+npm run naver:draft -- --folder "output/<생성폴더>"
+```
+
+Claude Code 작업 중에도 기존 `.claude` 구조를 삭제하거나 대규모로 바꾸지 않습니다.
