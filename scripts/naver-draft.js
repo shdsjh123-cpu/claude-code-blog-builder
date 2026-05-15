@@ -60,9 +60,27 @@ const IMAGE_BUTTON_SELECTORS = [
 
 const TAG_SELECTORS = [
   'input[placeholder*="태그"]',
+  'input[placeholder*="태그를 입력"]',
+  'input[aria-label*="태그"]',
+  'input[title*="태그"]',
+  'textarea[aria-label*="태그"]',
   'textarea[placeholder*="태그"]',
   '[contenteditable="true"][aria-label*="태그"]',
+  '[contenteditable="true"][data-placeholder*="태그"]',
+  '[data-placeholder*="태그"]',
+  '[class*="tag"] input',
+  '[class*="Tag"] input',
+  '[class*="hash"] input',
+  '[class*="Hash"] input',
+  '[class*="tag"] [contenteditable="true"]',
+  '[class*="Tag"] [contenteditable="true"]',
+  '.se-tag input',
+  '.se-tag-input',
+  '.se-hashtag input',
+  '.se-hashtag-input',
   '.se-hash-tag input',
+  '.post_tag input',
+  '.tag-input input',
   '.tag_input',
 ];
 
@@ -344,13 +362,26 @@ async function fillBodyWithImages(page, draft) {
   console.log(`본문/이미지 분산 입력 완료: ${selector}`);
 }
 
-async function fillTags(page, tags) {
+async function debugTagSelectors(page) {
+  console.log('\n[debug] 태그 selector 후보 확인');
+  for (const selector of TAG_SELECTORS) {
+    let total = 0;
+    for (const target of [page, ...page.frames()]) {
+      total += await target.locator(selector).count().catch(() => 0);
+    }
+    console.log(`[debug] ${selector} => ${total}`);
+  }
+}
+
+async function fillTags(page, tags, { debug = false } = {}) {
   if (!tags.length) {
     console.log('입력할 태그 없음');
     return;
   }
 
   const text = tags.map((tag) => (String(tag).startsWith('#') ? tag : `#${tag}`)).join(' ');
+  if (debug) await debugTagSelectors(page);
+
   try {
     const selector = await fillFirst(page, TAG_SELECTORS, text, '태그 입력란');
     console.log(`태그 입력 완료: ${selector}`);
@@ -421,7 +452,7 @@ async function main() {
     await openEditor(page, { discardExisting: Boolean(args['discard-existing']) });
     await fillTitle(page, draft.title);
     await fillBodyWithImages(page, draft);
-    await fillTags(page, draft.tags);
+    await fillTags(page, draft.tags, { debug: Boolean(args.debug) });
 
     console.log('\n입력 단계가 끝났습니다.');
     console.log('브라우저를 닫지 않습니다. 발행 전 최종 확인 후 직접 발행하세요.');
