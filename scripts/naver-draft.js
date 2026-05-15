@@ -167,7 +167,7 @@ async function dismissPopups(page) {
   }
 }
 
-async function handleExistingDraftPopup(page, { discardExisting = false } = {}) {
+async function handleExistingDraftPopup(page) {
   const popupTitle = page
     .locator('text=작성 중인 글이 있습니다.')
     .first();
@@ -176,17 +176,11 @@ async function handleExistingDraftPopup(page, { discardExisting = false } = {}) 
     return;
   }
 
-  if (!discardExisting) {
-    throw new Error(
-      '네이버에 작성 중인 글 팝업이 있습니다. 기존 글을 보존하려면 화면에서 직접 처리하세요. 새 초안을 강제로 시작하려면 --discard-existing 옵션을 붙여 다시 실행하세요.'
-    );
-  }
-
   const selectors = [
+    'button:has-text("취소")',
     'button:has-text("새로 작성")',
     'button:has-text("새 글 작성")',
-    'button:has-text("새글쓰기")',
-    'button:has-text("취소")',
+    'button:has-text("새글쓰기")'
   ];
 
   for (const selector of selectors) {
@@ -200,15 +194,15 @@ async function handleExistingDraftPopup(page, { discardExisting = false } = {}) 
   }
 
   throw new Error(
-    '작성 중인 글 팝업을 감지했지만 새 글 작성 버튼을 찾지 못했습니다. 화면에서 직접 처리하세요.'
+    '작성 중인 글 팝업을 감지했지만 취소/새 글 작성 버튼을 찾지 못했습니다. 화면에서 직접 처리하세요.'
   );
 }
 
-async function openEditor(page, options = {}) {
+async function openEditor(page) {
   await page.goto(NAVER_BLOG_WRITE_URL, { waitUntil: 'domcontentloaded' });
   await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
   await dismissPopups(page);
-  await handleExistingDraftPopup(page, options);
+  await handleExistingDraftPopup(page);
 }
 
 async function fillTitle(page, title) {
@@ -383,10 +377,13 @@ async function fillTags(page, tags, { debug = false } = {}) {
   if (debug) await debugTagSelectors(page);
 
   try {
-    const selector = await fillFirst(page, TAG_SELECTORS, text, '태그 입력란');
-    console.log(`태그 입력 완료: ${selector}`);
+    const { locator, selector } = await visibleTarget(page, BODY_SELECTORS, '본문 입력란');
+    await locator.evaluate((el) => el.focus()).catch(() => {});
+    await page.keyboard.press('End').catch(() => {});
+    await page.keyboard.type(`\n\n${text}`);
+    console.log(`본문 마지막 줄 태그 입력 완료: ${selector}`);
   } catch (e) {
-    console.warn(`태그 입력란을 찾지 못했습니다. 수동 입력 필요: ${e.message}`);
+    console.warn(`본문 마지막 줄 태그 입력 실패. 수동 입력 필요: ${e.message}`);
     console.log(`태그: ${text}`);
   }
 }
@@ -436,7 +433,7 @@ async function dumpEditorDebug(page) {
 async function main() {
   const args = parseArgs(process.argv);
   if (!args.folder) {
-    console.error('Usage: npm run naver:draft -- --folder "output/<폴더>" [--discard-existing]');
+    console.error('Usage: npm run naver:draft -- --folder "output/<폴더>"');
     process.exit(2);
   }
 
@@ -449,7 +446,7 @@ async function main() {
   console.log('자동 발행은 하지 않습니다. 발행 버튼은 사용자가 직접 눌러야 합니다.\n');
 
   try {
-    await openEditor(page, { discardExisting: Boolean(args['discard-existing']) });
+    await openEditor(page);
     await fillTitle(page, draft.title);
     await fillBodyWithImages(page, draft);
     await fillTags(page, draft.tags, { debug: Boolean(args.debug) });
