@@ -340,8 +340,26 @@ async function attachImages(page, imagePaths, { focusBody = true } = {}) {
 
 async function typeBodyText(page, bodyLocator, text) {
   if (!text.trim()) return;
-  await bodyLocator.evaluate((el) => el.focus()).catch(() => {});
+  await focusEditableEnd(bodyLocator);
   await page.keyboard.type(`${text.trim()}\n\n`);
+}
+
+async function focusEditableEnd(locator) {
+  await locator.evaluate((el) => {
+    el.focus();
+    const doc = el.ownerDocument;
+    const win = doc.defaultView;
+    if (!win) return;
+
+    const range = doc.createRange();
+    range.selectNodeContents(el);
+    range.collapse(false);
+
+    const selection = win.getSelection();
+    if (!selection) return;
+    selection.removeAllRanges();
+    selection.addRange(range);
+  });
 }
 
 async function fillBodyWithImages(page, draft) {
@@ -349,9 +367,9 @@ async function fillBodyWithImages(page, draft) {
   const [thumbnail, ...inlineImages] = draft.images;
 
   if (thumbnail) {
-    await locator.evaluate((el) => el.focus()).catch(() => {});
+    await focusEditableEnd(locator);
     await attachImages(page, [thumbnail], { focusBody: false });
-    await page.keyboard.press('End').catch(() => {});
+    await focusEditableEnd(locator);
     await page.keyboard.type('\n\n');
     console.log(`썸네일 상단 삽입 완료: ${basename(thumbnail)}`);
   }
@@ -362,7 +380,7 @@ async function fillBodyWithImages(page, draft) {
     const image = inlineImages[i];
     if (image) {
       await attachImages(page, [image], { focusBody: false });
-      await page.keyboard.press('End').catch(() => {});
+      await focusEditableEnd(locator);
       await page.keyboard.type('\n\n');
       console.log(`본문 중간 이미지 삽입 완료: ${basename(image)}`);
     }
@@ -393,8 +411,7 @@ async function fillTags(page, tags, { debug = false } = {}) {
 
   try {
     const { locator, selector } = await visibleTarget(page, BODY_SELECTORS, '본문 입력란');
-    await locator.evaluate((el) => el.focus()).catch(() => {});
-    await page.keyboard.press('End').catch(() => {});
+    await focusEditableEnd(locator);
     await page.keyboard.type(`\n\n${text}`);
     console.log(`본문 마지막 줄 태그 입력 완료: ${selector}`);
   } catch (e) {
