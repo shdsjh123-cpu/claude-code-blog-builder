@@ -13,6 +13,11 @@
     "duplicate": "node scripts/duplicate-check.js",
     "preview": "node scripts/preview.js",
     "setup-tone": "node scripts/setup-tone-fetch.js",
+    "naver:login": "node scripts/naver-login.js",
+    "naver:draft": "node scripts/naver-draft.js",
     "sanitize-check": "bash scripts/sanitize-check.sh"
+  },
+  "dependencies": {
+    "playwright": "^1.60.0"
   }
 }
