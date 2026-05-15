@@ -69,3 +69,19 @@ Prefer lawful, measured alternatives:
 - "consultation can clarify what can and cannot be checked"
 - "results cannot be guaranteed"
 - "privacy-invasive or illegal requests are not accepted"
+
+## Detective Agency Blog Writing Style
+
+When generating or revising detective agency blog posts:
+
+- Identify the search intent of the keyword before writing the body.
+- Make the title and opening paragraph explicit and easy to understand.
+- Put the core answer near the top instead of delaying it.
+- Show the article structure quickly so readers know what will be covered.
+- Keep paragraphs concise and avoid padding or repetitive explanation.
+- Use concrete criteria, steps, and examples instead of vague phrases.
+- Avoid ambiguous wording such as "may be helpful" when a specific lawful
+  action, limit, or check can be stated.
+- Maintain all prohibited-expression rules above, including no guarantees, no
+  illegal tracking, no illegal personal-data lookup, and no privacy-invasive
+  investigation claims.
