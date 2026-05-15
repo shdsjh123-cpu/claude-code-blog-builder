@@ -56,7 +56,7 @@ const splitList = (s) =>
 // ────────────────────────────────────────────────
 // 브랜드 시스템 (환경 변수 기반 — /setup-domain이 설정)
 // ────────────────────────────────────────────────
-const BRAND_NAME = process.env.BRAND_NAME || 'YOUR BRAND';
+const BRAND_NAME = process.env.BRAND_NAME || '탐정법인 범랑';
 const BRAND_LOGO_MARK = process.env.BRAND_LOGO_MARK || 'BR';
 const BRAND_PHONE = process.env.BRAND_PHONE || '1660-2515';
 const BG_COLOR   = process.env.BRAND_BG_COLOR || '#F7F6F2';
@@ -73,6 +73,7 @@ const BRAND_STYLE = [
   `small visible royal-blue logo mark "${BRAND_LOGO_MARK}" paired with "${BRAND_NAME}" in the top-left or footer; logo must be noticeable but never the main subject`,
   `bottom footer must include phone number "${BRAND_PHONE}" fully visible and legible`,
   'NO people, NO stock-photo aesthetic, NO random clutter, NO fake logos beyond the specified brand mark, NO watermark, NO heavy gradient or glow',
+  'Never render placeholder text such as "YOUR BRAND", "Your Brand", "brand name", or "logo here"',
   'NO legal-result guarantees, NO lawsuit outcome promises, NO illegal tracking or privacy-invasive claims',
   'Korean text must render perfectly legible and sharp',
   `The only brand name shown is exactly "${BRAND_NAME}" — use this exact spelling and capitalization`,
