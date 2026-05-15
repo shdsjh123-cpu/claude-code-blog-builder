@@ -61,19 +61,23 @@ export async function pauseForUser(message) {
 }
 
 export async function visibleTarget(page, selectors, label) {
-  const targets = [page, ...page.frames()];
-  const errors = [];
+  const deadline = Date.now() + 30000;
 
-  for (const selector of selectors) {
-    for (const target of targets) {
-      try {
-        const locator = target.locator(selector).first();
-        await locator.waitFor({ state: 'visible', timeout: 1500 });
-        return { locator, selector };
-      } catch (e) {
-        errors.push(`${selector}: ${e.message.split('\n')[0]}`);
+  while (Date.now() < deadline) {
+    const targets = [page, ...page.frames()];
+
+    for (const selector of selectors) {
+      for (const target of targets) {
+        try {
+          const locator = target.locator(selector).first();
+          if ((await locator.count()) > 0) return { locator, selector };
+        } catch {
+          // Try next selector/frame. Frames can navigate while SmartEditor loads.
+        }
       }
     }
+
+    await page.waitForTimeout(250);
   }
 
   throw new Error(
@@ -95,8 +99,8 @@ export async function fillFirst(page, selectors, value, label) {
   try {
     await locator.fill(value);
   } catch {
-    await page.keyboard.press('Meta+A');
-    await page.keyboard.press('Control+A');
+    await locator.evaluate((el) => el.focus()).catch(() => {});
+    await page.keyboard.press(process.platform === 'darwin' ? 'Meta+A' : 'Control+A');
     await page.keyboard.type(value);
   }
 
