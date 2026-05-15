@@ -11,12 +11,13 @@
  *   BRAND_ACCENT    — 포인트 색 hex (기본 #D97A3A)
  *
  * Usage:
- *   GEMINI_API_KEY=xxx node scripts/generate-images.js \
+ *   node scripts/generate-images.js \
  *     --title "..." --keyword "..." \
  *     --points "p1|||p2|||p3" \
  *     --quote "..." \
  *     --steps "s1|||s2|||s3" \
- *     --output "output/folder/images"
+ *     --output "output/folder/images" \
+ *     --provider openai
  */
 
 import './lib/env.js';
@@ -132,12 +133,8 @@ function processPrompt({ keyword, steps }) {
 // Gemini 호출
 // ────────────────────────────────────────────────
 const MODEL = process.env.GEMINI_IMAGE_MODEL || 'gemini-3-pro-image-preview';
-const IMAGE_PROVIDER = process.env.IMAGE_PROVIDER || 'gemini';
 
-void generateOpenAIImage;
-void IMAGE_PROVIDER;
-
-async function generateOne(prompt) {
+async function generateGeminiImage(prompt) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error('GEMINI_API_KEY is not set');
 
@@ -168,32 +165,60 @@ async function generateOne(prompt) {
   return Buffer.from(imgPart.inlineData.data, 'base64');
 }
 
+function localDate() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function keywordSlug(keyword) {
+  return keyword
+    .trim()
+    .replace(/\s+/g, '')
+    .replace(/[\\/:"*?<>|]+/g, '-');
+}
+
+function normalizeProvider(provider) {
+  const value = String(provider || '').trim().toLowerCase();
+  if (value === 'openai' || value === 'gemini') return value;
+  throw new Error(`Unknown image provider "${provider}". Use "openai" or "gemini".`);
+}
+
 // ────────────────────────────────────────────────
 // 메인
 // ────────────────────────────────────────────────
 async function main() {
   const args = parseArgs(process.argv);
-  const { title, keyword, quote, output } = args;
+  const { title, keyword, quote } = args;
   const points = splitList(args.points);
   const steps = splitList(args.steps);
+  const provider = normalizeProvider(args.provider || process.env.IMAGE_PROVIDER || 'openai');
 
-  if (!title || !keyword || !output) {
+  if (!title || !keyword) {
     console.error(
-      'Usage: --title <t> --keyword <k> --output <dir> [--points a|||b] [--quote q] [--steps a|||b]'
+      'Usage: --title <t> --keyword <k> [--output <dir>] [--provider openai|gemini] [--points a|||b] [--quote q] [--steps a|||b]'
     );
     process.exit(2);
   }
-  if (!process.env.GEMINI_API_KEY) {
+  if (provider === 'gemini' && !process.env.GEMINI_API_KEY) {
     console.error('ERROR: GEMINI_API_KEY environment variable is required.');
     process.exit(1);
   }
+  if (provider === 'openai' && !process.env.OPENAI_API_KEY) {
+    console.error('ERROR: OPENAI_API_KEY environment variable is required.');
+    process.exit(1);
+  }
 
+  const output = args.output || join('output', `${localDate()}_${keywordSlug(keyword)}`, 'images');
   await mkdir(output, { recursive: true });
 
   const jobs = [
-    { name: 'thumbnail', prompt: thumbnailPrompt({ title, keyword }) },
+    { name: 'thumbnail', size: '1536x1024', prompt: thumbnailPrompt({ title, keyword }) },
     {
       name: 'infographic',
+      size: '1024x1536',
       prompt: infographicPrompt({
         keyword,
         points: points.length ? points : [keyword],
@@ -201,6 +226,7 @@ async function main() {
     },
     {
       name: 'quote-card',
+      size: '1024x1024',
       prompt: quoteCardPrompt({
         quote: quote || title,
         keyword,
@@ -208,6 +234,7 @@ async function main() {
     },
     {
       name: 'process',
+      size: '1536x1024',
       prompt: processPrompt({
         keyword,
         steps: steps.length ? steps : ['리서치', '기획', '제작', '검수'],
@@ -220,11 +247,20 @@ async function main() {
 
   for (const job of jobs) {
     try {
-      console.log(`[generate] ${job.name} ...`);
-      const buf = await generateOne(job.prompt);
       const path = join(output, `${job.name}.png`);
-      await writeFile(path, buf);
-      console.log(`  ✓ ${path} (${buf.length} bytes)`);
+      console.log(`[generate:${provider}] ${job.name} ...`);
+      if (provider === 'openai') {
+        const result = await generateOpenAIImage({
+          prompt: job.prompt,
+          outputPath: path,
+          size: job.size,
+        });
+        console.log(`  ✓ ${result.outputPath} (${result.bytes} bytes)`);
+      } else {
+        const buf = await generateGeminiImage(job.prompt);
+        await writeFile(path, buf);
+        console.log(`  ✓ ${path} (${buf.length} bytes)`);
+      }
       okCount++;
     } catch (e) {
       console.error(`  ✗ ${job.name}: ${e.message}`);
