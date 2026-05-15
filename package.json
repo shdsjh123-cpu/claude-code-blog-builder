@@ -13,6 +13,8 @@
     "duplicate": "node scripts/duplicate-check.js",
     "preview": "node scripts/preview.js",
     "setup-tone": "node scripts/setup-tone-fetch.js",
+    "post": "node scripts/generate-post.js",
+    "blog:auto": "node scripts/blog-auto.js",
     "naver:login": "node scripts/naver-login.js",
     "naver:draft": "node scripts/naver-draft.js",
     "sanitize-check": "bash scripts/sanitize-check.sh"
