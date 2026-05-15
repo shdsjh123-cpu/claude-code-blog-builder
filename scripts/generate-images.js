@@ -20,6 +20,7 @@
  */
 
 import './lib/env.js';
+import { generateOpenAIImage } from './lib/openai-images.js';
 
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -131,6 +132,10 @@ function processPrompt({ keyword, steps }) {
 // Gemini 호출
 // ────────────────────────────────────────────────
 const MODEL = process.env.GEMINI_IMAGE_MODEL || 'gemini-3-pro-image-preview';
+const IMAGE_PROVIDER = process.env.IMAGE_PROVIDER || 'gemini';
+
+void generateOpenAIImage;
+void IMAGE_PROVIDER;
 
 async function generateOne(prompt) {
   const apiKey = process.env.GEMINI_API_KEY;
