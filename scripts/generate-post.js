@@ -282,13 +282,20 @@ function renderMarkdown(post) {
 }
 
 function renderHtml(post) {
-  const parts = [`<h1>${escapeHtml(post.title)}</h1>`];
+  const styles = {
+    h1: 'font-size:26px;line-height:1.45;font-weight:800;margin:0 0 18px;color:#111827;',
+    h2: 'font-size:21px;line-height:1.5;font-weight:800;margin:30px 0 14px;color:#111827;',
+    p: 'font-size:16px;line-height:1.85;margin:0 0 14px;color:#1f2937;',
+    ul: 'margin:0 0 18px 0;padding-left:22px;',
+    li: 'font-size:16px;line-height:1.75;margin:0 0 8px;color:#1f2937;',
+  };
+  const parts = [`<h1 style="${styles.h1}">${escapeHtml(post.title)}</h1>`];
   for (const section of post.sections) {
-    if (section.heading) parts.push(`<h2>${escapeHtml(section.heading)}</h2>`);
-    for (const p of section.paragraphs || []) parts.push(`<p>${escapeHtml(p)}</p>`);
+    if (section.heading) parts.push(`<h2 style="${styles.h2}">${escapeHtml(section.heading)}</h2>`);
+    for (const p of section.paragraphs || []) parts.push(`<p style="${styles.p}">${escapeHtml(p)}</p>`);
     if (section.bullets?.length) {
-      parts.push('<ul>');
-      for (const bullet of section.bullets) parts.push(`<li>${escapeHtml(bullet)}</li>`);
+      parts.push(`<ul style="${styles.ul}">`);
+      for (const bullet of section.bullets) parts.push(`<li style="${styles.li}">${escapeHtml(bullet)}</li>`);
       parts.push('</ul>');
     }
   }

@@ -83,6 +83,8 @@ BRAND_LOGO_PATH=assets/brand-logo.png
 BRAND_PHONE=1660-2515
 ```
 
+`BRAND_LOGO_PATH`는 참고용이며, 생성 이미지에 실제 로고 파일을 후처리로 합성하지 않습니다.
+
 `GEMINI_API_KEY`, `GEMINI_IMAGE_MODEL`은 기존 Gemini 이미지 흐름 호환용 optional 값입니다.
 
 ## blog:auto

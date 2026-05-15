@@ -65,7 +65,14 @@ function splitSections(html) {
   return { title, sections };
 }
 
-// HTML 정규화 — 네이버 스마트에디터 페이스트 친화 (h1 제거, h2/h3는 굵은 단락, 표는 텍스트 단락)
+const PASTE_STYLES = {
+  h2: 'font-size:21px;line-height:1.55;font-weight:800;margin:28px 0 12px;color:#111827;',
+  h3: 'font-size:18px;line-height:1.55;font-weight:800;margin:22px 0 10px;color:#111827;',
+  p: 'font-size:16px;line-height:1.85;margin:0 0 14px;color:#1f2937;',
+  li: 'font-size:16px;line-height:1.75;margin:0 0 8px;color:#1f2937;',
+};
+
+// HTML 정규화 — 네이버 스마트에디터 페이스트 친화 (h1 제거, h2/h3는 크기 계층이 있는 단락, 표는 텍스트 단락)
 function normalizeForPaste(html) {
   let out = html;
 
@@ -91,8 +98,16 @@ function normalizeForPaste(html) {
   // h1 제거 (제목은 별도 입력)
   out = out.replace(/<h1[^>]*>[\s\S]*?<\/h1>/gi, '');
   // h2/h3 → 굵은 단락
-  out = out.replace(/<h2[^>]*>([\s\S]*?)<\/h2>/gi, '<p><br></p><p><strong>$1</strong></p>');
-  out = out.replace(/<h3[^>]*>([\s\S]*?)<\/h3>/gi, '<p><strong>$1</strong></p>');
+  out = out.replace(
+    /<h2[^>]*>([\s\S]*?)<\/h2>/gi,
+    `<p><br></p><p style="${PASTE_STYLES.h2}"><strong>$1</strong></p>`
+  );
+  out = out.replace(
+    /<h3[^>]*>([\s\S]*?)<\/h3>/gi,
+    `<p style="${PASTE_STYLES.h3}"><strong>$1</strong></p>`
+  );
+  out = out.replace(/<p(?![^>]*style=)([^>]*)>/gi, `<p style="${PASTE_STYLES.p}"$1>`);
+  out = out.replace(/<li(?![^>]*style=)([^>]*)>/gi, `<li style="${PASTE_STYLES.li}"$1>`);
   // hr 제거
   out = out.replace(/<hr\s*\/?>/gi, '<p><br></p>');
   // 연속 빈 단락 정리
@@ -385,16 +400,16 @@ function renderPreviewHtml({ folder, title, meta, sections, images }) {
     /* ───── Section body ───── */
     .section-body {
       padding: 24px;
-      font-size: 15px;
+      font-size: 16px;
     }
     .section-body > * { max-width: 100%; }
     .section-body h1 {
-      font-size: 22px;
+      font-size: 26px;
       margin-bottom: 14px;
       line-height: 1.4;
     }
     .section-body h2 {
-      font-size: 18px;
+      font-size: 21px;
       margin: 22px 0 12px;
       color: var(--fg);
       text-transform: none;
@@ -403,6 +418,8 @@ function renderPreviewHtml({ folder, title, meta, sections, images }) {
     }
     .section-body p {
       margin-bottom: 14px;
+      font-size: 16px;
+      line-height: 1.85;
     }
     .section-body strong, .section-body b {
       font-weight: 700;
@@ -412,7 +429,7 @@ function renderPreviewHtml({ folder, title, meta, sections, images }) {
       padding-left: 22px;
       margin-bottom: 14px;
     }
-    .section-body li { margin-bottom: 6px; }
+    .section-body li { margin-bottom: 6px; font-size: 16px; line-height: 1.75; }
 
     /* Tables — 가로 스크롤 가능하게 wrapping */
     .section-body table {
@@ -422,7 +439,7 @@ function renderPreviewHtml({ folder, title, meta, sections, images }) {
       overflow-x: auto;
       border-collapse: collapse;
       margin: 14px 0;
-      font-size: 14px;
+      font-size: 15px;
       white-space: normal;
     }
     .section-body th, .section-body td {
@@ -586,7 +603,7 @@ function renderPreviewHtml({ folder, title, meta, sections, images }) {
 
       <div class="card">
         <h2>🖼 이미지 ${images.length}장</h2>
-        <button class="download-all" onclick="downloadAll()">⬇ 4장 일괄 다운로드</button>
+        <button class="download-all" onclick="downloadAll()">⬇ 이미지 다운로드</button>
         ${imagesHtml}
       </div>
 
@@ -596,7 +613,7 @@ function renderPreviewHtml({ folder, title, meta, sections, images }) {
         <label><input type="checkbox"><span>카테고리 선택</span></label>
         <label><input type="checkbox"><span>본문 단락 복사·붙여넣기 (위에서부터 순서대로)</span></label>
         <label><input type="checkbox"><span>표는 스마트에디터에서 직접 생성</span></label>
-        <label><input type="checkbox"><span>이미지 4장 본문에 업로드</span></label>
+        <label><input type="checkbox"><span>이미지 ${images.length}장 본문에 업로드</span></label>
         <label><input type="checkbox"><span>썸네일 = 대표 이미지로 등록</span></label>
         <label><input type="checkbox"><span>태그 10개 입력</span></label>
         <label><input type="checkbox"><span>맞춤법 검사</span></label>
@@ -821,7 +838,7 @@ async function main() {
   console.log(`\n💡 사용법:`);
   console.log(`   1. 메타데이터 카드에서 제목·태그 복사 → 스마트에디터에 입력`);
   console.log(`   2. 본문 섹션을 위에서부터 순서대로 "서식 포함 복사" → 붙여넣기`);
-  console.log(`   3. 이미지 4장 일괄 다운로드 → 본문에 업로드`);
+  console.log(`   3. 이미지 ${images.length}장 다운로드 → 본문에 업로드`);
   console.log(`   4. 체크리스트 따라가며 발행`);
 }
 

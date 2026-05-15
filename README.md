@@ -46,6 +46,8 @@ BRAND_LOGO_PATH=assets/brand-logo.png
 BRAND_PHONE=1660-2515
 ```
 
+`BRAND_LOGO_PATH`는 참고용 경로이며, 생성 이미지 위에 로고 파일을 합성하지 않습니다.
+
 `.env`와 `output/`은 Git에 커밋하지 않습니다.
 
 ## 전체 자동 생성

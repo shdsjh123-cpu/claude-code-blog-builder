@@ -22,7 +22,6 @@
 
 import './lib/env.js';
 import { generateOpenAIImage } from './lib/openai-images.js';
-import { applyBrandOverlay } from './lib/brand-overlay.js';
 
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -59,7 +58,6 @@ const splitList = (s) =>
 // ────────────────────────────────────────────────
 const BRAND_NAME = process.env.BRAND_NAME || '탐정법인 범랑';
 const BRAND_LOGO_MARK = process.env.BRAND_LOGO_MARK || 'BR';
-const BRAND_LOGO_PATH = process.env.BRAND_LOGO_PATH || 'assets/brand-logo.png';
 const BRAND_PHONE = process.env.BRAND_PHONE || '1660-2515';
 const BG_COLOR   = process.env.BRAND_BG_COLOR || '#F7F6F2';
 const FG_COLOR   = process.env.BRAND_FG_COLOR || '#1A1A1A';
@@ -71,15 +69,17 @@ const BRAND_STYLE = [
   'visual reference: formal Korean agency guide poster with a thick blue outer frame, thin inner border, rounded blue label badges, pale-blue information cards, dark navy CTA-style footer bar, and clean arrow connectors',
   'premium clean sans-serif typography (Pretendard-like)',
   'large bold Korean headline, strong numeric hierarchy, generous whitespace, crisp grid alignment',
+  'Keep the main headline size as requested, but make all body copy, checklist text, card descriptions, table labels, and process node labels noticeably larger than a typical infographic',
+  'Minimum body text size target: about 28-34 px on 1536 px wide images and about 24-30 px on 1024 px wide images; never use tiny caption text',
+  'Use fewer words per card if needed so every Korean body line remains large, sharp, and readable on a mobile screen',
   'information-diagram first: prefer cards, tables, flow nodes, price/criteria boxes, check bars, and comparison layouts over decorative illustration',
-  `small visible royal-blue logo mark "${BRAND_LOGO_MARK}" paired with "${BRAND_NAME}" in the top-left or footer; logo must be noticeable but never the main subject`,
-  `After image generation, the real brand logo file is overlaid exactly from "${BRAND_LOGO_PATH}". Leave clean space in the top-left area for this logo.`,
+  `create the brand lockup inside the generated design only: a simple royal-blue monogram mark similar in feeling to "${BRAND_LOGO_MARK}" paired with the exact Korean brand name "${BRAND_NAME}"`,
   `bottom footer must include phone number "${BRAND_PHONE}" fully visible and legible`,
   'NO people, NO stock-photo aesthetic, NO random clutter, NO fake logos beyond the specified brand mark, NO watermark, NO heavy gradient or glow',
-  'Never render placeholder text such as "YOUR BRAND", "Your Brand", "brand name", or "logo here"',
+  'Never render placeholder text such as "YOUR BRAND", "Your Brand", "your brand", "brand name", "logo here", "company name", or any English substitute for the brand',
   'NO legal-result guarantees, NO lawsuit outcome promises, NO illegal tracking or privacy-invasive claims',
   'Korean text must render perfectly legible and sharp',
-  `The only brand name shown is exactly "${BRAND_NAME}" — use this exact spelling and capitalization`,
+  `The only brand name shown is exactly "${BRAND_NAME}" — do not translate it and do not replace it with placeholder text`,
 ].join('. ');
 
 function thumbnailPrompt({ title, keyword }) {
@@ -87,8 +87,8 @@ function thumbnailPrompt({ title, keyword }) {
     `Create a 16:9 Korean blog thumbnail — editorial infographic style, not an illustration.`,
     `Large bold Korean headline (must be perfectly legible): "${title}"`,
     `Small rounded blue label badge in top-right corner with text: "${keyword}"`,
-    `Top-left compact brand lockup: small "${BRAND_LOGO_MARK}" monogram mark plus "${BRAND_NAME}" text. Keep it smaller than the headline but easy to notice.`,
-    `Add a simple information-card row or arrow diagram that hints at checklist/evidence review — not a photo.`,
+    `Top-left compact brand lockup generated as part of the image: small "${BRAND_LOGO_MARK}"-style monogram mark plus exact text "${BRAND_NAME}". Keep it smaller than the headline but easy to notice.`,
+    `Add a simple information-card row or arrow diagram that hints at checklist/evidence review — not a photo. Card body text must be large and readable, not caption-sized.`,
     `Bottom dark navy footer bar: show "${BRAND_NAME}" on the left and phone number "${BRAND_PHONE}" on the right, fully visible.`,
     BRAND_STYLE,
     `Layout: headline left-aligned, bordered poster frame, diagram element lower half, balanced negative space.`,
@@ -103,9 +103,10 @@ function infographicPrompt({ keyword, points }) {
   return [
     `Create a 2:3 vertical Korean infographic poster — pure information diagram, no decorative art.`,
     `Top title in Korean: "${keyword} 핵심 포인트"`,
-    `Below the title, render these items as a vertical stack of pale-blue numbered cards with royal-blue labels and a dark navy check bar at the bottom:`,
+    `Below the title, render these items as a vertical stack of pale-blue numbered cards with royal-blue labels and large readable body text:`,
     numbered,
-    `Top-left compact brand lockup: "${BRAND_LOGO_MARK}" + "${BRAND_NAME}".`,
+    `Use no more than 2 short body lines per card. Enlarge the card text instead of adding small explanatory captions.`,
+    `Top-left compact brand lockup generated as part of the image: "${BRAND_LOGO_MARK}"-style mark + exact text "${BRAND_NAME}".`,
     `Bottom dark navy footer bar: "${BRAND_NAME}" and "${BRAND_PHONE}" fully visible.`,
     BRAND_STYLE,
     `Consistent spacing between cards, clear numeric hierarchy, no icons of people.`,
@@ -117,7 +118,8 @@ function quoteCardPrompt({ quote, keyword }) {
     `Create a 1:1 square Korean quote card — clean editorial typography focus.`,
     `Small royal-blue rounded label at top: "${keyword}"`,
     `Center the large Korean quote in bold sans-serif (not serif), perfectly legible: "${quote}"`,
-    `Top-left compact brand lockup: small "${BRAND_LOGO_MARK}" monogram mark plus "${BRAND_NAME}" text.`,
+    `Top-left compact brand lockup generated as part of the image: small "${BRAND_LOGO_MARK}"-style monogram mark plus exact text "${BRAND_NAME}".`,
+    `Any supporting labels under the quote must be large enough to read clearly on a phone screen.`,
     `Use a thin blue border frame and one dark navy footer strip containing phone number "${BRAND_PHONE}" fully visible.`,
     BRAND_STYLE,
     `No people, no photographic elements.`,
@@ -134,8 +136,8 @@ function processPrompt({ keyword, steps }) {
     `Top title in Korean: "${keyword} 진행 프로세스"`,
     `Render this as a horizontal row of numbered pill-shaped nodes connected by arrows, each node containing its Korean label clearly:`,
     numberedSteps,
-    `Each node: pale-blue rounded rectangle with royal-blue number badge + Korean label. Arrows between nodes in royal blue.`,
-    `Top-left compact brand lockup: "${BRAND_LOGO_MARK}" + "${BRAND_NAME}".`,
+    `Each node: pale-blue rounded rectangle with royal-blue number badge + Korean label. Node labels must be large and bold, with no tiny subtext. Arrows between nodes in royal blue.`,
+    `Top-left compact brand lockup generated as part of the image: "${BRAND_LOGO_MARK}"-style mark + exact text "${BRAND_NAME}".`,
     `Bottom dark navy footer bar: "${BRAND_NAME}" and "${BRAND_PHONE}" fully visible.`,
     BRAND_STYLE,
     `Pure schematic diagram, no background imagery, no people.`,
@@ -227,7 +229,7 @@ async function main() {
   const output = args.output || join('output', `${localDate()}_${keywordSlug(keyword)}`, 'images');
   await mkdir(output, { recursive: true });
 
-  const jobs = [
+  const allJobs = [
     { name: 'thumbnail', size: '1536x1024', prompt: thumbnailPrompt({ title, keyword }) },
     {
       name: 'infographic',
@@ -250,10 +252,11 @@ async function main() {
       size: '1536x1024',
       prompt: processPrompt({
         keyword,
-        steps: steps.length ? steps : ['리서치', '기획', '제작', '검수'],
+        steps: steps.length ? steps : ['상담', '자료 확인', '가능 범위 안내', '진행 여부 결정'],
       }),
     },
   ];
+  const jobs = args['all-images'] ? allJobs : allJobs.slice(0, 1);
 
   let okCount = 0;
   const errors = [];
@@ -268,24 +271,11 @@ async function main() {
           outputPath: path,
           size: job.size,
         });
-        console.log(`  ✓ ${result.outputPath} (${result.bytes} bytes)`);
+        console.log(`  ✓ ${result.outputPath} (${result.bytes} bytes, model: ${result.model})`);
       } else {
         const buf = await generateGeminiImage(job.prompt);
         await writeFile(path, buf);
         console.log(`  ✓ ${path} (${buf.length} bytes)`);
-      }
-      try {
-        const overlay = await applyBrandOverlay({
-          imagePath: path,
-          logoPath: BRAND_LOGO_PATH,
-          brandName: BRAND_NAME,
-          phone: BRAND_PHONE,
-        });
-        if (overlay.applied) {
-          console.log(`  ✓ brand logo overlaid from ${BRAND_LOGO_PATH}`);
-        }
-      } catch (e) {
-        console.warn(`  ! brand logo overlay skipped: ${e.message}`);
       }
       okCount++;
     } catch (e) {
