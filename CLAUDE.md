@@ -79,6 +79,7 @@ OPENAI_IMAGE_MODEL=gpt-image-2
 
 BRAND_NAME=탐정법인 범랑
 BRAND_LOGO_MARK=BR
+BRAND_LOGO_PATH=assets/brand-logo.png
 BRAND_PHONE=1660-2515
 ```
 

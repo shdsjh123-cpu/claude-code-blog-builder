@@ -37,6 +37,7 @@ cp .env.example .env
 | `OPENAI_IMAGE_MODEL` | 필수 | 이미지 생성 모델, 기본 목표 `gpt-image-2` |
 | `BRAND_NAME` | 권장 | 이미지에 표시할 브랜드명 |
 | `BRAND_LOGO_MARK` | 권장 | 이미지에 표시할 짧은 로고 마크 |
+| `BRAND_LOGO_PATH` | 권장 | 생성 이미지 위에 그대로 합성할 로고 파일 |
 | `BRAND_PHONE` | 권장 | 이미지 하단 전화번호 |
 | `GEMINI_API_KEY` | 선택 | 기존 Gemini 이미지 생성 호환용 |
 | `GEMINI_IMAGE_MODEL` | 선택 | 기존 Gemini 이미지 생성 호환용 |
@@ -56,6 +57,7 @@ OPENAI_IMAGE_MODEL=gpt-image-2
 
 BRAND_NAME=탐정법인 범랑
 BRAND_LOGO_MARK=BR
+BRAND_LOGO_PATH=assets/brand-logo.png
 BRAND_PHONE=1660-2515
 ```
 

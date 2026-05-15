@@ -22,6 +22,7 @@
 
 import './lib/env.js';
 import { generateOpenAIImage } from './lib/openai-images.js';
+import { applyBrandOverlay } from './lib/brand-overlay.js';
 
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -58,6 +59,7 @@ const splitList = (s) =>
 // ────────────────────────────────────────────────
 const BRAND_NAME = process.env.BRAND_NAME || '탐정법인 범랑';
 const BRAND_LOGO_MARK = process.env.BRAND_LOGO_MARK || 'BR';
+const BRAND_LOGO_PATH = process.env.BRAND_LOGO_PATH || 'assets/brand-logo.png';
 const BRAND_PHONE = process.env.BRAND_PHONE || '1660-2515';
 const BG_COLOR   = process.env.BRAND_BG_COLOR || '#F7F6F2';
 const FG_COLOR   = process.env.BRAND_FG_COLOR || '#1A1A1A';
@@ -71,6 +73,7 @@ const BRAND_STYLE = [
   'large bold Korean headline, strong numeric hierarchy, generous whitespace, crisp grid alignment',
   'information-diagram first: prefer cards, tables, flow nodes, price/criteria boxes, check bars, and comparison layouts over decorative illustration',
   `small visible royal-blue logo mark "${BRAND_LOGO_MARK}" paired with "${BRAND_NAME}" in the top-left or footer; logo must be noticeable but never the main subject`,
+  `After image generation, the real brand logo file is overlaid exactly from "${BRAND_LOGO_PATH}". Leave clean space in the top-left area for this logo.`,
   `bottom footer must include phone number "${BRAND_PHONE}" fully visible and legible`,
   'NO people, NO stock-photo aesthetic, NO random clutter, NO fake logos beyond the specified brand mark, NO watermark, NO heavy gradient or glow',
   'Never render placeholder text such as "YOUR BRAND", "Your Brand", "brand name", or "logo here"',
@@ -270,6 +273,19 @@ async function main() {
         const buf = await generateGeminiImage(job.prompt);
         await writeFile(path, buf);
         console.log(`  ✓ ${path} (${buf.length} bytes)`);
+      }
+      try {
+        const overlay = await applyBrandOverlay({
+          imagePath: path,
+          logoPath: BRAND_LOGO_PATH,
+          brandName: BRAND_NAME,
+          phone: BRAND_PHONE,
+        });
+        if (overlay.applied) {
+          console.log(`  ✓ brand logo overlaid from ${BRAND_LOGO_PATH}`);
+        }
+      } catch (e) {
+        console.warn(`  ! brand logo overlay skipped: ${e.message}`);
       }
       okCount++;
     } catch (e) {
