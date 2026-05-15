@@ -85,3 +85,19 @@ When generating or revising detective agency blog posts:
 - Maintain all prohibited-expression rules above, including no guarantees, no
   illegal tracking, no illegal personal-data lookup, and no privacy-invasive
   investigation claims.
+
+## AI Briefing-Oriented Structure
+
+Write posts so search engines and AI briefing features can extract a clear,
+accurate answer from the page:
+
+- Start each major section with a direct answer sentence before explanation.
+- Use factual, self-contained paragraphs that can stand alone when summarized.
+- Prefer concrete definitions, conditions, checklists, and comparison tables.
+- Separate what can be checked, what cannot be checked, and what requires legal
+  consultation.
+- Avoid vague promotional copy that does not answer the search query.
+- Do not overstate certainty; distinguish general guidance from case-dependent
+  judgment.
+- Keep image captions and surrounding text aligned with the actual section
+  topic so extracted media is not misleading.
