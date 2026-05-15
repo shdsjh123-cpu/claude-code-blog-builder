@@ -42,6 +42,73 @@ const BLOG_TYPES = {
   },
 };
 
+const BASE_TAGS = [
+  '탐정상담',
+  '탐정법인범랑',
+  '범랑탐정',
+  '탐정사무소',
+  '민간조사',
+  '탐정보고서',
+  '합법적증거수집',
+];
+
+const TYPE_TAGS = {
+  infidelity: [
+    '외도조사',
+    '외도조사비용',
+    '상간소송준비',
+    '이혼소송증거',
+    '서울외도조사',
+    '경기외도조사',
+  ],
+  'people-search': [
+    '사람찾기',
+    '소재확인',
+    '가출상담',
+    '연락두절',
+    '실종가족상담',
+  ],
+  cost: [
+    '탐정비용',
+    '탐정사무소비용',
+    '외도조사비용',
+    '증거수집비용',
+    '탐정선택방법',
+    '상간소송준비',
+    '이혼소송증거',
+  ],
+  evidence: [
+    '증거수집비용',
+    '증거수집상담',
+    '사실관계확인',
+    '자료정리',
+    '상간소송준비',
+    '이혼소송증거',
+  ],
+  general: [
+    '탐정선택방법',
+    '탐정상담',
+    '탐정보고서',
+    '민간조사',
+  ],
+};
+
+const LOCATION_TAGS = [
+  '서울탐정',
+  '경기탐정',
+  '수원탐정',
+  '의정부탐정',
+  '고양탐정',
+  '남양주탐정',
+  '평택탐정',
+  '용인탐정',
+  '화성탐정',
+  '부산탐정',
+  '대구탐정',
+  '대전탐정',
+  '광주탐정',
+];
+
 function parseArgs(argv) {
   const args = {};
   for (let i = 2; i < argv.length; i++) {
@@ -87,6 +154,42 @@ function asArray(value) {
   return Array.isArray(value) ? value.filter(Boolean).map(String) : [];
 }
 
+function normalizeTag(tag) {
+  return String(tag || '')
+    .replace(/^#+/, '')
+    .replace(/\s+/g, '')
+    .replace(/[^\p{L}\p{N}_-]/gu, '')
+    .trim();
+}
+
+function keywordTags(keyword) {
+  const clean = normalizeTag(keyword);
+  if (!clean) return [];
+  return [clean, `${clean}상담`];
+}
+
+function buildTags(aiTags, keyword, type) {
+  const candidates = [
+    ...keywordTags(keyword),
+    ...(TYPE_TAGS[type] || TYPE_TAGS.general),
+    ...BASE_TAGS,
+    ...LOCATION_TAGS,
+    ...asArray(aiTags),
+  ];
+  const seen = new Set();
+  const tags = [];
+
+  for (const candidate of candidates) {
+    const tag = normalizeTag(candidate);
+    if (!tag || seen.has(tag)) continue;
+    seen.add(tag);
+    tags.push(tag);
+    if (tags.length >= 30) break;
+  }
+
+  return tags;
+}
+
 function fallbackSections(keyword, typeInfo) {
   return typeInfo.sections.map((heading) => ({
     heading,
@@ -99,7 +202,7 @@ function normalizePost(data, keyword, type, typeInfo) {
   const description = String(
     data.description || `${keyword}을(를) 준비하기 전 확인할 사항을 정리한 글입니다.`
   ).trim();
-  const tags = asArray(data.tags).slice(0, 10);
+  const tags = buildTags(data.tags, keyword, type);
   const sections = asArray(data.sections).length
     ? data.sections.map((section) => ({
         heading: String(section.heading || '').trim(),
@@ -230,6 +333,7 @@ function buildPrompt({ keyword, type, typeInfo }) {
 - 필요한 경우 "법률 판단은 변호사 상담이 필요합니다"라는 취지를 자연스럽게 포함합니다.
 - 상담 유도 문구는 강요하지 않고 자연스럽게 작성합니다.
 - JSON 외의 설명, markdown fence, 코드블록은 출력하지 마세요.
+- tags는 10개 이상 제안하되, 실제 저장 시 브랜드/지역/업종 태그가 추가될 수 있습니다.
 `.trim();
 }
 
