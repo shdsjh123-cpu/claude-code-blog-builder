@@ -14,6 +14,8 @@
  *   - 발행 체크리스트
  */
 
+import './lib/env.js';
+
 import { readFile, readdir, writeFile } from 'node:fs/promises';
 import { join, basename } from 'node:path';
 import { spawn } from 'node:child_process';

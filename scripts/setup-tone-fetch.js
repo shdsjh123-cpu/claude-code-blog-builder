@@ -15,6 +15,8 @@
  * 외부 의존성 0 (Node 20+ 내장 fetch만 사용).
  */
 
+import './lib/env.js';
+
 import { writeFile, mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
 

@@ -4,6 +4,8 @@
  * Usage: node scripts/quality-check.js --file post.html [--keyword "병원 마케팅"]
  */
 
+import './lib/env.js';
+
 import { readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 

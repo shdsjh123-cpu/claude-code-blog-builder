@@ -8,6 +8,8 @@
  * 미설정 시 명확한 에러 + 종료. (웹 검색 대체는 Claude가 수동 수행)
  */
 
+import './lib/env.js';
+
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 

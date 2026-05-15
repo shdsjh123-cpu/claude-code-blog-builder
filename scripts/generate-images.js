@@ -19,6 +19,8 @@
  *     --output "output/folder/images"
  */
 
+import './lib/env.js';
+
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 

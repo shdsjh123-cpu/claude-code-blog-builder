@@ -7,6 +7,8 @@
  * 훅이 실패해도 Claude의 작업을 막지 않도록 항상 exit 0.
  */
 
+import './lib/env.js';
+
 import { spawnSync } from 'node:child_process';
 import { basename, dirname } from 'node:path';
 
