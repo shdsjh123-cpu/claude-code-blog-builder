@@ -57,17 +57,23 @@ const splitList = (s) =>
 // 브랜드 시스템 (환경 변수 기반 — /setup-domain이 설정)
 // ────────────────────────────────────────────────
 const BRAND_NAME = process.env.BRAND_NAME || 'YOUR BRAND';
+const BRAND_LOGO_MARK = process.env.BRAND_LOGO_MARK || 'BR';
+const BRAND_PHONE = process.env.BRAND_PHONE || '1660-2515';
 const BG_COLOR   = process.env.BRAND_BG_COLOR || '#F7F6F2';
 const FG_COLOR   = process.env.BRAND_FG_COLOR || '#1A1A1A';
 const ACCENT     = process.env.BRAND_ACCENT   || '#D97A3A';
 
 const BRAND_STYLE = [
-  'Minimal Korean editorial infographic design',
-  `off-white background (${BG_COLOR}), deep charcoal (${FG_COLOR}) text, single point color (${ACCENT})`,
+  'Korean corporate detective-agency editorial infographic design',
+  `white or off-white background (${BG_COLOR}), deep navy/charcoal text (${FG_COLOR}), strong royal-blue accent (${ACCENT})`,
+  'visual reference: formal Korean agency guide poster with a thick blue outer frame, thin inner border, rounded blue label badges, pale-blue information cards, dark navy CTA-style footer bar, and clean arrow connectors',
   'premium clean sans-serif typography (Pretendard-like)',
-  'generous whitespace, clear visual hierarchy',
-  'information-diagram first: prefer charts, tables, flow nodes, comparison layouts over decorative illustration',
-  'NO people, NO stock-photo aesthetic, NO random clutter, NO fake logos, NO watermark, NO heavy gradient or glow',
+  'large bold Korean headline, strong numeric hierarchy, generous whitespace, crisp grid alignment',
+  'information-diagram first: prefer cards, tables, flow nodes, price/criteria boxes, check bars, and comparison layouts over decorative illustration',
+  `small visible royal-blue logo mark "${BRAND_LOGO_MARK}" paired with "${BRAND_NAME}" in the top-left or footer; logo must be noticeable but never the main subject`,
+  `bottom footer must include phone number "${BRAND_PHONE}" fully visible and legible`,
+  'NO people, NO stock-photo aesthetic, NO random clutter, NO fake logos beyond the specified brand mark, NO watermark, NO heavy gradient or glow',
+  'NO legal-result guarantees, NO lawsuit outcome promises, NO illegal tracking or privacy-invasive claims',
   'Korean text must render perfectly legible and sharp',
   `The only brand name shown is exactly "${BRAND_NAME}" — use this exact spelling and capitalization`,
 ].join('. ');
@@ -76,11 +82,12 @@ function thumbnailPrompt({ title, keyword }) {
   return [
     `Create a 16:9 Korean blog thumbnail — editorial infographic style, not an illustration.`,
     `Large bold Korean headline (must be perfectly legible): "${title}"`,
-    `Small pill-shaped tag in top-left corner with text: "${keyword}"`,
-    `Bottom-right corner small label: "${BRAND_NAME}"`,
-    `Add one subtle visual element that hints at data/diagram (e.g., a small bar chart, numbered badge, or flow arrow) — not a photo.`,
+    `Small rounded blue label badge in top-right corner with text: "${keyword}"`,
+    `Top-left compact brand lockup: small "${BRAND_LOGO_MARK}" monogram mark plus "${BRAND_NAME}" text. Keep it smaller than the headline but easy to notice.`,
+    `Add a simple information-card row or arrow diagram that hints at checklist/evidence review — not a photo.`,
+    `Bottom dark navy footer bar: show "${BRAND_NAME}" on the left and phone number "${BRAND_PHONE}" on the right, fully visible.`,
     BRAND_STYLE,
-    `Layout: headline left-aligned, diagram element right side, balanced negative space.`,
+    `Layout: headline left-aligned, bordered poster frame, diagram element lower half, balanced negative space.`,
   ].join('\n');
 }
 
@@ -92,9 +99,10 @@ function infographicPrompt({ keyword, points }) {
   return [
     `Create a 2:3 vertical Korean infographic poster — pure information diagram, no decorative art.`,
     `Top title in Korean: "${keyword} 핵심 포인트"`,
-    `Below the title, render these items as a vertical stack of numbered cards (rounded rectangles with a left accent bar), each with the number prominently displayed and the Korean text rendered clearly:`,
+    `Below the title, render these items as a vertical stack of pale-blue numbered cards with royal-blue labels and a dark navy check bar at the bottom:`,
     numbered,
-    `Bottom footer center: "${BRAND_NAME}"`,
+    `Top-left compact brand lockup: "${BRAND_LOGO_MARK}" + "${BRAND_NAME}".`,
+    `Bottom dark navy footer bar: "${BRAND_NAME}" and "${BRAND_PHONE}" fully visible.`,
     BRAND_STYLE,
     `Consistent spacing between cards, clear numeric hierarchy, no icons of people.`,
   ].join('\n');
@@ -103,10 +111,10 @@ function infographicPrompt({ keyword, points }) {
 function quoteCardPrompt({ quote, keyword }) {
   return [
     `Create a 1:1 square Korean quote card — clean editorial typography focus.`,
-    `Small label at top in warm-orange: "${keyword}"`,
+    `Small royal-blue rounded label at top: "${keyword}"`,
     `Center the large Korean quote in bold sans-serif (not serif), perfectly legible: "${quote}"`,
-    `Bottom-right signature: "— ${BRAND_NAME}"`,
-    `Oversized decorative quotation marks as faint background element (very low opacity).`,
+    `Top-left compact brand lockup: small "${BRAND_LOGO_MARK}" monogram mark plus "${BRAND_NAME}" text.`,
+    `Use a thin blue border frame and one dark navy footer strip containing phone number "${BRAND_PHONE}" fully visible.`,
     BRAND_STYLE,
     `No people, no photographic elements.`,
   ].join('\n');
@@ -122,8 +130,9 @@ function processPrompt({ keyword, steps }) {
     `Top title in Korean: "${keyword} 진행 프로세스"`,
     `Render this as a horizontal row of numbered pill-shaped nodes connected by arrows, each node containing its Korean label clearly:`,
     numberedSteps,
-    `Each node: rounded rectangle with number badge + Korean label. Arrows between nodes in warm-orange.`,
-    `Bottom-right corner: "${BRAND_NAME}"`,
+    `Each node: pale-blue rounded rectangle with royal-blue number badge + Korean label. Arrows between nodes in royal blue.`,
+    `Top-left compact brand lockup: "${BRAND_LOGO_MARK}" + "${BRAND_NAME}".`,
+    `Bottom dark navy footer bar: "${BRAND_NAME}" and "${BRAND_PHONE}" fully visible.`,
     BRAND_STYLE,
     `Pure schematic diagram, no background imagery, no people.`,
   ].join('\n');
