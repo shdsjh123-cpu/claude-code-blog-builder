@@ -1,146 +1,200 @@
 # Claude Code Blog Builder
 
-> ⚠️ **이 도구는 1개 블로그를 직접 운영하는 경우에 최적화되어 있습니다.**
-> 멀티 카테고리 운영 / 저품질 복구 / 발행 스케줄링 / 외주팀 워크플로우는 상위 솔루션이 필요합니다.
+탐정업 네이버 블로그 글을 생성하고, 네이버 블로그 글쓰기 화면에 발행 직전까지 자동 입력하는 도구입니다.
 
-Claude Code 위에서 동작하는 한국어 블로그 자동화 시스템입니다.
-키워드 하나만 던지면 리서치 → 글 작성 → 이미지 생성 → 품질 검증 → 발행 어시스턴트까지 한 번에 돌아갑니다.
+Claude Code 기반의 `.claude/commands`, `.claude/agents` 구조는 보존합니다. 동시에 Codex나 일반 터미널에서도 `npm run ...` 명령으로 실행할 수 있게 보조 스크립트를 제공합니다.
 
-```
-/blog-new "병원 마케팅"
-```
+이 프로젝트는 자동 발행 도구가 아닙니다. `naver:draft`는 제목, 본문, 이미지, 태그를 네이버 글쓰기 화면에 입력한 뒤 멈추며, 발행 버튼은 사용자가 직접 눌러야 합니다.
 
-이 한 줄로 블로그 글 1편이 (사람 검수만 남긴 채) 완성됩니다.
+## 현재 목적
 
----
+- 탐정업 정보성 네이버 블로그 글 생성
+- OpenAI 텍스트 API로 초안 생성
+- OpenAI `gpt-image-2`로 이미지 4종 생성
+- 탐정업 금지표현 품질 검사
+- 복사하기 쉬운 `preview.html` 생성
+- 네이버 블로그 글쓰기 화면에 발행 직전까지 자동 입력
 
-## ✨ 특징
+## 요구 사항
 
-- 🎯 **외부 의존성 0** — `npm install` 안 함. Node 20+ 내장 fetch만 사용.
-- 🔒 **단일 진실 공급원** — 회사 사실을 한 파일에 박아 AI 추측/거짓말 차단.
-- 📊 **결정론적 검증** — "잘 썼어요" (LLM) 대신 "키워드 11회 / 금칙어 0개 / 유사도 1.3%" (스크립트).
-- 🤖 **5명의 서브에이전트** — 리서처 / 라이터 / 품질 리뷰어 / 의료법 검사관 / 셋업 인터뷰어.
-- 🚀 **30분 발행 → 30초로** — 발행 어시스턴트가 복붙 마찰을 0으로 줄임.
-- 🌏 **한국 시장 특화** — 네이버 블로그 저품질 트리거 회피, 한국어 톤 학습.
+- Node.js 20+
+- npm
+- OpenAI Platform API 키
+- 네이버 로그인 가능한 브라우저 세션
+- 선택: Claude Code
 
----
+Playwright는 네이버 글쓰기 화면 자동 입력에 사용됩니다.
 
-## 🚀 빠른 시작
-
-### 1. 설치 (30초)
+## 설치
 
 ```bash
-git clone https://github.com/shdsjh123-cpu/claude-code-blog-builder.git
-cd claude-code-blog-builder
+npm install
 cp .env.example .env
-# .env 파일 열어서 GEMINI_API_KEY 채우기
 ```
 
-자세한 설치는 [INSTALL.md](INSTALL.md) 참조.
+`.env`에 실제 API 키를 입력합니다. 실제 키는 문서, 커밋, 채팅에 쓰지 않습니다.
 
-### 2. Claude Code 실행
+```env
+IMAGE_PROVIDER=openai
+OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_IMAGE_MODEL=gpt-image-2
+OPENAI_TEXT_MODEL=gpt-4.1-mini
+
+BRAND_NAME=탐정법인 범랑
+BRAND_LOGO_MARK=BR
+BRAND_PHONE=1660-2515
+```
+
+`.env`와 `output/`은 Git에 커밋하지 않습니다.
+
+## 전체 자동 생성
+
+`blog:auto`는 글 생성부터 미리보기까지 실행합니다. 네이버 입력은 자동 실행하지 않습니다.
 
 ```bash
-claude
+npm run blog:auto -- --keyword "외도 증거수집 전 확인할 것" --type infidelity
+npm run blog:auto -- --keyword "사람 찾기 의뢰 전 주의사항" --type people-search
+npm run blog:auto -- --keyword "탐정 비용 산정 기준" --type cost
+npm run blog:auto -- --keyword "상간소송 전 확인해야 할 자료" --type evidence
 ```
 
-### 3. 셋업 (5분)
+`--keyword`는 필수입니다. `--type`은 선택이며 기본값은 `general`입니다.
 
-```
-/setup
-```
+지원 type:
 
-7개 질문에 답하면 여러분 회사 정보가 자동으로 시스템에 주입됩니다.
-
-### 4. 첫 글 쓰기
-
-```
-/blog-new "여러분 카테고리 키워드"
-```
-
-5~10분 후 `output/<날짜>_<키워드>/` 폴더에 풀세트가 생성됩니다.
-
-### 5. 발행 어시스턴트
-
-```
-/blog-preview output/<폴더>
-```
-
-브라우저가 자동으로 열리고, 섹션별 복사 버튼으로 네이버 에디터에 빠르게 옮길 수 있습니다.
-
----
-
-## 📁 폴더 구조
-
-```
-claude-code-blog-builder/
-├── knowledge/        # 회사 사실의 유일한 출처 (/setup이 채움)
-├── scripts/          # 외부 의존성 0 도구들
-├── templates/        # 이미지 폴백 골격
-├── .claude/
-│   ├── commands/     # 슬래시 커맨드 8종
-│   └── agents/       # 서브에이전트 5명
-├── keyword-bank/     # 카테고리별 시드 키워드 (예시)
-├── output/           # 결과물 (gitignored)
-└── docs/             # 사용법/트러블슈팅
-```
-
-전체 구조 설명: [CLAUDE.md](CLAUDE.md)
-
----
-
-## 🎓 어떻게 만들어졌는가
-
-이 시스템은 어느 디자인 에이전시가 자체 블로그 운영을 위해 2주 동안 만든 도구입니다.
-처음부터 완벽하게 설계되지 않았어요. 문제를 발견할 때마다 한 단계씩 보완했습니다.
-
-진화 6단계 + 5가지 빌드 교훈: [docs/build-history.md](docs/build-history.md)
-
-핵심 설계 원칙 + 동작 흐름: [docs/explainer.md](docs/explainer.md)
-
----
-
-## 🛠 주요 명령어
-
-| 명령 | 설명 |
+| type | 용도 |
 |:---|:---|
-| `/setup` | 5분 인터뷰로 회사 정보 입력 (Phase 1) |
-| `/setup-tone` | 회사 블로그 URL에서 톤 자동 학습 (Phase 2) |
-| `/setup-domain` | 카테고리별 키워드뱅크 + 산업 금칙어 (Phase 3) |
-| `/blog-new "키워드"` | 풀 파이프라인 실행 (리서치→글→이미지→품질→메타) |
-| `/blog-research "키워드"` | 키워드 리서치만 |
-| `/blog-quality <폴더>` | 품질 재검사 |
-| `/blog-publish-ready <폴더>` | 8개 게이트 발행 가능 여부 점검 |
-| `/blog-preview <폴더>` | 발행 어시스턴트 (브라우저 오픈) |
+| `infidelity` | 외도, 상간, 배우자 문제 |
+| `people-search` | 사람 찾기, 가출, 소재 확인 |
+| `cost` | 탐정 비용, 견적, 추가 비용 |
+| `evidence` | 증거수집, 자료 정리, 사실관계 확인 |
+| `general` | 일반 탐정업 정보성 글 |
 
----
+## 로컬 대시보드
 
-## 📋 요구 사항
+브라우저에서 키워드 추천, 글 생성, 결과 폴더 확인, 네이버 글쓰기 입력을 실행할 수 있습니다.
 
-- **Node.js 20+** (내장 fetch 필요)
-- **Claude Code** ([설치](https://docs.claude.com/en/docs/claude-code))
-- **Gemini API 키** ([무료 발급](https://aistudio.google.com))
-- **네이버 Search API** (선택, 없으면 웹 검색 대체)
+```bash
+npm run dashboard
+```
 
----
+Windows PowerShell에서 실행 정책 때문에 `npm`이 막히면 다음처럼 실행합니다.
 
-## 🔐 보안
+```powershell
+npm.cmd run dashboard
+```
 
-- `.env`, `knowledge/brand-facts.md`, `output/`는 `.gitignore`에 등록되어 git에 올라가지 않습니다.
-- push 전 자동 검증: `npm run sanitize-check`
-- 회사 데이터를 실수로 공개 레포에 올리지 않도록 설계되어 있습니다.
+기본 주소는 `http://127.0.0.1:3000/`입니다. 포트를 바꾸려면:
 
----
+```powershell
+$env:PORT='3002'
+npm.cmd run dashboard
+```
 
-## 📜 라이선스
+또는 실행 파일을 사용할 수 있습니다.
 
-MIT — 자유롭게 사용/수정/배포 가능.
+- Windows: `start-dashboard.bat`
+- macOS: `start-dashboard.command`
 
----
+대시보드는 로컬 전용으로 동작하며 발행 버튼을 자동으로 누르지 않습니다.
 
-## 🙏 만든 이
+## 생성되는 폴더
 
-이 레포는 한 디자인 에이전시 사장님의 자체 블로그 자동화 도구를 외부 공개용으로 일반화한 것입니다.
-"1개 블로그 운영"은 이 도구로 충분합니다.
+```text
+output/2026-05-15_탐정비용산정기준/
+├── post.md
+├── post.html
+├── metadata.json
+├── quality-report.json
+├── preview.html
+└── images/
+    ├── thumbnail.png
+    ├── infographic.png
+    ├── quote-card.png
+    └── process.png
+```
 
-멀티 카테고리 운영 / 저품질 복구 / 발행 스케줄링 / 외주팀 워크플로우 등 상위 운영이 필요하시면 별도 문의 채널을 참고하세요.
+## 네이버 로그인
+
+처음 한 번 네이버에 직접 로그인합니다.
+
+```bash
+npm run naver:login
+```
+
+브라우저가 열리면 사용자가 직접 네이버에 로그인합니다. 이 프로젝트는 네이버 아이디와 비밀번호를 요구하거나 저장하지 않습니다. 로그인 세션은 로컬 Playwright user-data-dir에 저장됩니다.
+
+## 네이버 초안 입력
+
+생성된 output 폴더를 지정합니다.
+
+```bash
+npm run naver:draft -- --folder "output/2026-05-15_탐정비용산정기준"
+```
+
+동작:
+
+- 네이버 블로그 글쓰기 화면 열기
+- 작성 중 글 팝업 처리
+- 제목 입력
+- 썸네일 상단 삽입
+- 나머지 이미지 본문 중간 삽입
+- 본문 입력
+- 태그를 본문 마지막 줄에 해시태그 형태로 입력
+- 발행 전 단계에서 멈춤
+
+발행 버튼은 절대 클릭하지 않습니다. 최종 확인과 발행은 사용자가 직접 합니다.
+
+## 개별 명령
+
+글만 생성:
+
+```bash
+npm run post -- --keyword "탐정 비용 산정 기준" --type cost --output "output/test-post"
+```
+
+이미지만 생성:
+
+```bash
+npm run images -- \
+  --title "탐정 비용 산정 기준" \
+  --keyword "탐정 비용 산정 기준" \
+  --provider openai \
+  --output "output/test-post/images"
+```
+
+품질 검사:
+
+```bash
+npm run quality -- --file "output/test-post/post.md" --keyword "탐정 비용 산정 기준"
+```
+
+미리보기 생성:
+
+```bash
+npm run preview -- --folder "output/test-post" --no-open
+```
+
+## 보안 원칙
+
+- 실제 API 키는 `.env`에만 둡니다.
+- API 키를 README, 문서, 커밋, 채팅에 쓰지 않습니다.
+- `.env`, `output/`, `PROGRESS_SUMMARY.txt`는 커밋하지 않습니다.
+- 네이버 아이디/비밀번호는 스크립트가 요구하지 않습니다.
+- 자동 발행은 하지 않습니다.
+
+## Claude Code 구조
+
+기존 Claude Code slash command와 agent 구조는 유지합니다.
+
+```text
+.claude/
+├── commands/
+└── agents/
+```
+
+Codex/터미널 작업에서는 `scripts/`와 `npm run ...` 명령을 보조 도구로 사용합니다.
+
+## 라이선스
+
+MIT

@@ -1,0 +1,239 @@
+claude-code-blog-builder current status analysis
+Date: 2026-05-15
+Mode: read-only analysis result, no source files modified during analysis
+
+1. git status changed files
+
+Modified files:
+- .claude/settings.local.json
+- .env.example
+- CLAUDE.md
+- INSTALL.md
+- README.md
+- package.json
+
+Untracked files:
+- dashboard/app.js
+- dashboard/index.html
+- dashboard/style.css
+- scripts/dashboard-server.js
+- scripts/lib/diff.js
+- scripts/lib/job-runner.js
+- scripts/lib/naver-keyword-api.js
+- scripts/lib/open-os.js
+- scripts/lib/rewrite-rules.js
+- scripts/lib/safe-path.js
+- scripts/quality-rewrite.js
+
+2. Dashboard implementation status
+
+The dashboard implementation is substantially in place.
+
+Implemented pieces:
+- Local HTTP dashboard server: scripts/dashboard-server.js
+- Static frontend files: dashboard/index.html, dashboard/app.js, dashboard/style.css
+- Blog auto job endpoint: /api/jobs/blog-auto
+- Naver draft job endpoint: /api/jobs/naver-draft
+- Server-sent events log streaming for jobs
+- Output folder listing
+- Preview file opening through /files/
+- OS folder opening helper
+- Naver keyword recommendation and comparison endpoints
+- Local safety controls:
+  - binds to 127.0.0.1 only
+  - validates Host header
+  - requires X-Local-Dashboard header for non-GET requests
+  - validates output paths through safe-path.js
+  - runs child processes with shell:false
+  - allows only one active job at a time
+
+Important issue:
+- Several dashboard files display mojibake/corrupted Korean text in comments and UI strings.
+- JS syntax checks passed, but the browser UI will likely show broken Korean text.
+- dashboard/index.html also appears to contain visually suspicious broken text and should be browser-tested.
+
+3. package.json dashboard script
+
+package.json includes:
+
+"dashboard": "node scripts/dashboard-server.js"
+
+It also includes:
+
+"rewrite": "node scripts/quality-rewrite.js"
+
+4. npm run dashboard executability
+
+Direct PowerShell command:
+
+npm run dashboard -- --no-open
+
+failed because Windows PowerShell blocked npm.ps1 due to execution policy.
+
+Using npm.cmd:
+
+npm.cmd run dashboard -- --no-open
+
+did run the script, but failed on the default port because 127.0.0.1:3000 was already in use.
+
+Using another port worked:
+
+$env:PORT='3002'
+node scripts/dashboard-server.js --no-open
+
+HTTP check result:
+- http://127.0.0.1:3002/
+- Status: 200
+
+Conclusion:
+- The dashboard server can run.
+- On this Windows PowerShell environment, use npm.cmd or adjust execution policy.
+- Port 3000 is currently occupied, so use another PORT or free port 3000.
+
+5. .env and API key Git risk
+
+Current state:
+- .env exists locally.
+- .env is ignored by .gitignore.
+- git status does not show .env.
+- git ls-files shows .env.example tracked, but not .env.
+- Search did not find obvious real API key patterns such as sk-... in tracked source/docs.
+- Documentation contains placeholder values like your_openai_api_key_here, which is acceptable.
+
+Risk:
+- .env.example is modified and should be checked before commit to ensure it contains placeholders only.
+- Do not commit .env.
+- Do not commit generated output/ folders.
+
+6. Mac/Windows compatible launcher
+
+There is no separate cross-platform launcher file.
+
+The current cross-platform mechanism is the npm script:
+
+npm run dashboard
+
+However, Windows PowerShell may require:
+
+npm.cmd run dashboard
+
+because npm.ps1 can be blocked by execution policy.
+
+7. start-dashboard.command and start-dashboard.bat
+
+Neither file exists currently.
+
+Checked pattern:
+- start-dashboard*
+
+Result:
+- no files found
+
+8. Candidate files for the next commit
+
+Likely commit candidates:
+- package.json
+- .env.example
+- README.md
+- INSTALL.md
+- CLAUDE.md
+- dashboard/app.js
+- dashboard/index.html
+- dashboard/style.css
+- scripts/dashboard-server.js
+- scripts/lib/diff.js
+- scripts/lib/job-runner.js
+- scripts/lib/naver-keyword-api.js
+- scripts/lib/open-os.js
+- scripts/lib/rewrite-rules.js
+- scripts/lib/safe-path.js
+- scripts/quality-rewrite.js
+
+Needs judgment before committing:
+- .claude/settings.local.json
+
+Reason:
+- It contains local testing allow-list style changes.
+- Commit only if this repository intentionally tracks shared Claude local settings.
+
+Do not commit:
+- .env
+- output/
+- node_modules/
+- real API keys or private credentials
+
+9. Recommended test order
+
+1) JavaScript syntax checks
+
+node --check dashboard/app.js
+node --check scripts/dashboard-server.js
+node --check scripts/lib/naver-keyword-api.js
+node --check scripts/lib/safe-path.js
+node --check scripts/lib/diff.js
+node --check scripts/lib/rewrite-rules.js
+node --check scripts/quality-rewrite.js
+
+2) Start dashboard server
+
+PowerShell example:
+
+$env:PORT='3002'
+npm.cmd run dashboard -- --no-open
+
+3) Browser check
+
+Open:
+
+http://127.0.0.1:3002/
+
+Check:
+- dashboard loads
+- Korean UI text is readable
+- layout is usable
+- no console errors
+
+4) Basic API checks
+
+GET /api/active
+GET /api/folders
+
+5) Security regression checks
+
+Check:
+- Host header rejection
+- POST requests without X-Local-Dashboard are rejected
+- path traversal under /files/ is rejected
+- output folder opening rejects paths outside output/
+
+6) Keyword recommendation checks
+
+Only run if .env has valid Naver keys:
+- NAVER_SEARCHAD_API_KEY
+- NAVER_SEARCHAD_SECRET_KEY
+- NAVER_SEARCHAD_CUSTOMER_ID
+- NAVER_CLIENT_ID
+- NAVER_CLIENT_SECRET
+
+7) Blog generation job check
+
+From dashboard:
+- enter a keyword
+- start blog-auto
+- confirm SSE logs stream
+- confirm output folder is created
+- confirm preview.html exists
+
+8) Preview and Naver draft check
+
+Check:
+- preview opens correctly
+- naver:draft fills title/body/images/tags
+- publish button is not clicked automatically
+
+Main follow-up items
+
+- Fix corrupted Korean text in dashboard/server/frontend files.
+- Decide whether to add start-dashboard.command and start-dashboard.bat.
+- Decide whether .claude/settings.local.json should be committed.
+- Verify .env.example contains placeholders only before committing.

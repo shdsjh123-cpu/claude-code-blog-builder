@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>범랑 자동화 블로그 (localhost)</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>📰 범랑 자동화 블로그</h1>
+    <span class="local-badge">localhost 전용</span>
+  </header>
+
+  <main>
+    <section class="card">
+      <div class="card-head">
+        <h2>키워드 추천</h2>
+        <span class="muted">메인 키워드를 입력하면 연관 키워드 후보를 비교합니다</span>
+      </div>
+      <form id="recommend-form" class="form-row">
+        <textarea
+          id="hint-keyword"
+          rows="2"
+          maxlength="2000"
+          placeholder="예: 합법 탐정추천, 탐정 비용"
+          autocomplete="off"
+          required
+        ></textarea>
+        <select id="recommend-limit" title="가져올 후보 개수">
+          <option value="10">10개</option>
+          <option value="20" selected>20개</option>
+          <option value="50">50개</option>
+        </select>
+        <button type="submit" id="recommend-btn" class="primary">
+          추천 검색
+        </button>
+      </form>
+      <div class="recommend-filters">
+        <label class="toggle">
+          <input type="checkbox" id="golden-only" />
+          <span>🟢 경쟁도 낮음(KGR &lt; 1)만 보기</span>
+        </label>
+        <span class="muted">
+          KGR = 발행량 ÷ 월간 검색량 · 낮을수록 경쟁이 약함
+        </span>
+      </div>
+      <p class="hint" id="recommend-status">
+        검색광고 API · 검색 API 키가 <code>.env</code> 에 설정돼 있어야 합니다.
+        여러 키워드는 쉼표(,) 또는 세미콜론(;)으로 구분하고, 공백은 키워드 내부 문자로 유지합니다.
+      </p>
+      <div id="recommend-results"></div>
+    </section>
+
+    <section class="grid">
+      <div class="card">
+        <h2>새 블로그 생성</h2>
+        <form id="create-form" class="form">
+          <label class="field">
+            <span>키워드</span>
+            <input
+              type="text"
+              id="keyword"
+              name="keyword"
+              required
+              maxlength="80"
+              placeholder="예: 외도 증거수집 전 확인할 것"
+              autocomplete="off"
+            />
+          </label>
+
+          <label class="field">
+            <span>유형</span>
+            <select id="type" name="type">
+              <option value="general">일반 정보성</option>
+              <option value="infidelity">외도/상간</option>
+              <option value="people-search">사람 찾기</option>
+              <option value="cost">비용/견적</option>
+              <option value="evidence">증거수집</option>
+            </select>
+          </label>
+
+          <button type="submit" id="submit-btn" class="primary">
+            블로그 생성
+          </button>
+          <p class="hint" id="form-status">대기 중</p>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>실행 로그</h2>
+        <div class="log-toolbar">
+          <span class="badge" id="job-badge">작업 없음</span>
+          <button type="button" id="clear-log-btn" class="ghost">로그 지우기</button>
+        </div>
+        <pre id="log" class="log" aria-live="polite"></pre>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>결과 폴더</h2>
+        <button type="button" id="refresh-folders-btn" class="ghost">새로고침</button>
+      </div>
+      <ul id="folders" class="folders">
+        <li class="empty">아직 생성된 폴더가 없습니다.</li>
+      </ul>
+    </section>
+
+    <section class="card note">
+      <h2>안전 안내</h2>
+      <ul>
+        <li>이 대시보드는 <strong>127.0.0.1</strong> 에만 바인딩됩니다 — 같은 네트워크의 다른 사람은 접근할 수 없습니다.</li>
+        <li>네이버 아이디/비밀번호는 어디에도 입력하지 않습니다.</li>
+        <li>발행 버튼은 절대 자동으로 클릭하지 않습니다 — <code>naver:draft</code> 가 작성 화면까지만 채우고 멈춥니다.</li>
+        <li>기존 CLI(<code>npm run blog:auto</code>, <code>npm run naver:draft</code>)는 그대로 사용할 수 있습니다.</li>
+      </ul>
+    </section>
+  </main>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="/app.js" defer></script>
+</body>
+</html>
