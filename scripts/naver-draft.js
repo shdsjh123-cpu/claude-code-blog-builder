@@ -158,38 +158,51 @@ async function dismissPopups(page) {
   ];
 
   for (const selector of selectors) {
-    try {
-      const loc = page.locator(selector).first();
-      if (await loc.isVisible({ timeout: 800 })) await loc.click();
-    } catch {
-      // Optional UI.
+    for (const target of [page, ...page.frames()]) {
+      try {
+        const loc = target.locator(selector).first();
+        if (await loc.isVisible({ timeout: 500 })) await loc.click();
+      } catch {
+        // Optional UI.
+      }
     }
   }
 }
 
 async function handleExistingDraftPopup(page) {
-  const popupTitle = page
-    .locator('text=작성 중인 글이 있습니다.')
-    .first();
-
-  if (!(await popupTitle.isVisible({ timeout: 1200 }).catch(() => false))) {
-    return;
+  let popupTarget = null;
+  for (const target of [page, ...page.frames()]) {
+    const popupTitle = target.locator('text=작성 중인 글이 있습니다.').first();
+    if (await popupTitle.isVisible({ timeout: 500 }).catch(() => false)) {
+      popupTarget = target;
+      break;
+    }
   }
 
+  if (!popupTarget) return false;
+
   const selectors = [
-    'button:has-text("취소")',
-    'button:has-text("새로 작성")',
-    'button:has-text("새 글 작성")',
-    'button:has-text("새글쓰기")'
+    '.se-popup-alert button:has-text("취소")',
+    '.se-popup-alert button:has-text("새로 작성")',
+    '.se-popup-alert button:has-text("새 글 작성")',
+    '.se-popup-alert button:has-text("새글쓰기")',
+    '[data-name*="popup"] button:has-text("취소")',
+    '[data-name*="popup"] button:has-text("새로 작성")',
+    '[data-name*="popup"] button:has-text("새 글 작성")',
+    '[data-name*="popup"] button:has-text("새글쓰기")',
+    '[class*="popup"] button:has-text("취소")',
+    '[class*="popup"] button:has-text("새로 작성")',
+    '[class*="popup"] button:has-text("새 글 작성")',
+    '[class*="popup"] button:has-text("새글쓰기")',
   ];
 
   for (const selector of selectors) {
-    const button = page.locator(selector).first();
+    const button = popupTarget.locator(selector).first();
     if (await button.isVisible({ timeout: 800 }).catch(() => false)) {
       await button.click();
       console.log(`작성 중인 글 팝업 처리: ${selector}`);
       await page.waitForTimeout(1000);
-      return;
+      return true;
     }
   }
 
@@ -285,9 +298,11 @@ async function attachImages(page, imagePaths, { focusBody = true } = {}) {
   let chooser;
   let selector;
   try {
-    const fileChooserPromise = page.waitForEvent('filechooser', { timeout: 10000 });
-    selector = await clickFirst(page, IMAGE_BUTTON_SELECTORS, '이미지 첨부 버튼');
-    chooser = await fileChooserPromise;
+    await handleExistingDraftPopup(page);
+    [chooser, selector] = await Promise.all([
+      page.waitForEvent('filechooser', { timeout: 10000 }),
+      clickFirst(page, IMAGE_BUTTON_SELECTORS, '이미지 첨부 버튼'),
+    ]);
   } catch (e) {
     throw new Error(`이미지 파일 선택창을 열지 못했습니다: ${e.message}`);
   }
@@ -447,7 +462,9 @@ async function main() {
 
   try {
     await openEditor(page);
+    await handleExistingDraftPopup(page);
     await fillTitle(page, draft.title);
+    await handleExistingDraftPopup(page);
     await fillBodyWithImages(page, draft);
     await fillTags(page, draft.tags, { debug: Boolean(args.debug) });
 
